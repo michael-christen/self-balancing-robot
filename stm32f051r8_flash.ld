@@ -3,8 +3,8 @@
 **
 **  File        : stm32_flash.ld
 **
-**  Abstract    : Linker script for STM32F072VB Device with
-**                128KByte FLASH, 16KByte RAM
+**  Abstract    : Linker script for STM32F051r8 Device with
+**                64KByte FLASH, 8KByte RAM
 **
 **                Set heap size, stack size and stack location according
 **                to application requirements.
@@ -31,17 +31,18 @@
 ENTRY(Reset_Handler)
 
 /* Highest address of the user mode stack */
-_estack = 0x20003FFF;    /* end of RAM */
+_estack = 0x20002000;    /* end of RAM */
 
 /* Generate a link error if heap and stack don't fit into RAM */
-_Min_Heap_Size = 0x200;      /* required amount of heap  */
+_Min_Heap_Size = 0;      /* required amount of heap  */
 _Min_Stack_Size = 0x400; /* required amount of stack */
 
 /* Specify the memory areas */
 MEMORY
 {
-FLASH (rx)      : ORIGIN = 0x8000000, LENGTH = 128K
-RAM (xrw)      : ORIGIN = 0x20000000, LENGTH = 16K
+  FLASH (rx)      : ORIGIN = 0x08000000, LENGTH = 64K
+  RAM (xrw)       : ORIGIN = 0x20000000, LENGTH = 8K
+  MEMORY_B1 (rx)  : ORIGIN = 0x60000000, LENGTH = 0K
 }
 
 /* Define output sections */
@@ -110,6 +111,7 @@ SECTIONS
   } >FLASH
 
   /* used by the startup to initialize data */
+  /* _sidata = .; */
   _sidata = LOADADDR(.data);
 
   /* Initialized data sections goes into RAM, load LMA copy after code */
@@ -123,6 +125,7 @@ SECTIONS
     . = ALIGN(4);
     _edata = .;        /* define a global symbol at data end */
   } >RAM AT> FLASH
+  /* } >RAM */
 
   
   /* Uninitialized data section */
@@ -152,6 +155,15 @@ SECTIONS
     . = ALIGN(4);
   } >RAM
 
+  /* MEMORY_bank1 section, code must be located here explicitly            */
+  /* Example: extern int foo(void) __attribute__ ((section (".mb1text"))); */
+  /* .memory_b1_text : */ 
+  /* {                 */
+  /*   *(.mb1text)     */    /* .mb1text sections (code) */
+  /*   *(.mb1text*)    */    /* .mb1text* sections (code)  */
+  /*   *(.mb1rodata)   */    /* read-only data (constants) */
+  /*   *(.mb1rodata*) */
+  /* } >MEMORY_B1 */
   
 
   /* Remove information from the standard libraries */
