@@ -20,7 +20,7 @@ OBJCOPY=$(BINPATH)arm-none-eabi-objcopy
 OBJDUMP=$(BINPATH)arm-none-eabi-objdump
 SIZE=$(BINPATH)arm-none-eabi-size
 
-LINKER_SCRIPT = stm32f072vb_flash.ld
+LINKER_SCRIPT = stm32f051r8_flash.ld
 
 CPU = -mcpu=cortex-m0 -mthumb
 
@@ -29,9 +29,9 @@ LDFLAGS  = $(CPU) -mlittle-endian -mthumb-interwork -nostartfiles -Wl,--gc-secti
 
 CFLAGS += -msoft-float
 
-# Default to STM32F072 if no device is passed
+# Default to STM32F051 if no device is passed
 ifeq ($(DEVICE_DEF), )
-DEVICE_DEF = STM32F072
+DEVICE_DEF = STM32F051
 endif
 
 CFLAGS += -D$(DEVICE_DEF)
@@ -55,6 +55,9 @@ INCLUDE_PATHS += -I$(BASEDIR)/lib/STM32F0xx_StdPeriph_Driver/inc
 
 OBJS = $(SRCS:.c=.o)
 OBJS += $(S_SRCS:.s=.o)
+
+CROSS_ELF := $(OUTPATH)/$(PROJ_NAME).elf
+CROSS_TARGET := $(OUTPATH)/$(PROJ_NAME).bin
 
 ###################################################
 
@@ -90,3 +93,7 @@ clean:
 	# Remove this line if you don't want to clean the libs as well
 	$(MAKE) clean -C lib
 	
+
+.PHONY: flash
+flash: proj $(CROSS_TARGET)
+	st-flash write $(CROSS_TARGET) 0x80000000
