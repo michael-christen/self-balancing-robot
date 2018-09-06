@@ -15,8 +15,8 @@ void init() {
 		while (1){};
 	}
 
-	RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOA, ENABLE);
-	GPIO_Init(GPIOA, &(GPIO_InitTypeDef){GPIO_Pin_15, GPIO_Mode_OUT, GPIO_Speed_2MHz, GPIO_OType_PP, GPIO_PuPd_NOPULL});
+	RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOC, ENABLE);
+	GPIO_Init(GPIOC, &(GPIO_InitTypeDef){GPIO_Pin_9, GPIO_Mode_OUT, GPIO_Speed_2MHz, GPIO_OType_PP, GPIO_PuPd_NOPULL});
 }
 
 int main(void) {
@@ -31,9 +31,9 @@ int main(void) {
 		if(tickMs > nextBlink) {
 			nextBlink = tickMs + BLINK_DELAY_MS;
 			if(blinkState) {
-				GPIO_SetBits(GPIOA, GPIO_Pin_15);
+				GPIO_SetBits(GPIOC, GPIO_Pin_9);
 			} else {
-				GPIO_ResetBits(GPIOA, GPIO_Pin_15);
+				GPIO_ResetBits(GPIOC, GPIO_Pin_9);
 			}
 			blinkState ^= 1;
 		}
