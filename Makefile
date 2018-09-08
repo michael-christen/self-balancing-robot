@@ -19,6 +19,7 @@ LD=$(BINPATH)arm-none-eabi-gcc
 OBJCOPY=$(BINPATH)arm-none-eabi-objcopy
 OBJDUMP=$(BINPATH)arm-none-eabi-objdump
 SIZE=$(BINPATH)arm-none-eabi-size
+GDBTUI=$(BINPATH)arm-none-eabi-gdb
 
 LINKER_SCRIPT = stm32f051r8_flash.ld
 
@@ -96,4 +97,13 @@ clean:
 
 .PHONY: flash
 flash: proj $(CROSS_TARGET)
-	st-flash write $(CROSS_TARGET) 0x80000000
+	st-flash write $(CROSS_TARGET) 0x8000000
+
+.PHONY: erase
+erase:
+	st-flash erase
+
+.PHONY: debug
+debug: $(CROSS_ELF)
+	xterm -e st-util &
+	$(GDBTUI) --eval-command="target remote localhost:4242" $(CROSS_ELF) -ex 'load'
