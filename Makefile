@@ -4,7 +4,10 @@
 
 SRCS = main.c startup_stm32f0xx.c
 SRCS += system_stm32f0xx.c stm32f0xx_it.c
-SRCS += src/stepper.c src/usart.c src/std_utils.c
+SRCS += src/stepper.c \
+		src/usart.c \
+		src/i2c.c \
+		src/std_utils.c
 S_SRCS = 
 
 # Project name

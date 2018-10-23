@@ -6,6 +6,7 @@
 
 #include "inc/stepper.h"
 #include "inc/usart.h"
+#include "inc/i2c.h"
 #include "inc/std_utils.h"
 
 #define BLINK_DELAY_US	(50)
@@ -22,7 +23,7 @@ void init() {
 }
 
 
-int main(void) {
+int vain2(void) {
     usart_configure(9600);
     uint16_t val;
     usart_send_string("HELLO WORLD");
@@ -64,6 +65,19 @@ int vain(void) {
 	}
 
 	return 0;
+}
+
+// TODO: Check that we need to shift up by 1
+#define MPU6050_ADDRESS (0xD0 << 1)
+
+int main(void) {
+    uint8_t read_buf[255];
+
+    init();
+    i2c_configure();
+    i2c_read_reg(MPU6050_ADDRESS, 117, 1, read_buf);
+    i2c_read_reg(MPU6050_ADDRESS, 107, 1, read_buf+1);
+    return 0;
 }
 
 void SysTick_Handler(void)
