@@ -8,6 +8,7 @@
 #include "inc/usart.h"
 #include "inc/i2c.h"
 #include "inc/std_utils.h"
+#include "inc/quaternion_filters.h"
 
 #define BLINK_DELAY_US	(50)
 
@@ -88,6 +89,13 @@ int main(void) {
     write_buf[0] = 0xFF;
     i2c_send(ARDUINO_SLAVE, 1, write_buf, false);
     i2c_receive(ARDUINO_SLAVE, 8, read_buf, true);
+    MahonyQuaternionUpdate(
+        0.0, 0.0, 0.0,
+        0.0, 0.0, 0.0,
+        0.0, 0.0, 0.0,
+        1.0
+    );
+    float *q = getQ();
     return 0;
 }
 
