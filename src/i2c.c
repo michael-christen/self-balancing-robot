@@ -55,7 +55,7 @@ void i2c_configure() {
 }
 
 
-void i2c_send(uint8_t address, uint16_t write_length, uint8_t *write_buffer, bool stop) {
+void i2c_send(uint16_t address, uint16_t write_length, uint8_t *write_buffer, bool stop) {
     // Ensure I2C isn't busy
     while(I2C_GetFlagStatus(I2C2, I2C_FLAG_BUSY) == SET);
     // Start the read
@@ -76,7 +76,7 @@ void i2c_send(uint8_t address, uint16_t write_length, uint8_t *write_buffer, boo
     }
 }
 
-void i2c_receive(uint8_t address, uint16_t read_length, uint8_t *read_buffer) {
+void i2c_receive(uint16_t address, uint16_t read_length, uint8_t *read_buffer) {
     // Ensure I2C isn't busy
     while(I2C_GetFlagStatus(I2C2, I2C_FLAG_BUSY) == SET);
     // Start the read
@@ -101,7 +101,7 @@ static uint8_t _temp_write_buffer[] = {0, 0};
 /*
  * START, ADDR(W), REG ADDR, START, ADDR(R), <data>, ..., NACK, STOP
  */
-void i2c_read_reg(uint8_t address, uint8_t reg, uint16_t read_length, uint8_t *read_buffer) {
+void i2c_read_reg(uint16_t address, uint8_t reg, uint16_t read_length, uint8_t *read_buffer) {
     _temp_write_buffer[0] = reg;
     i2c_send(address, 1, _temp_write_buffer, false);
     i2c_receive(address, read_length, read_buffer);
