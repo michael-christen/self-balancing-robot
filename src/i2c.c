@@ -20,7 +20,7 @@ void i2c_configure() {
 
     // GPIO Init
     RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOB, ENABLE);
-    RCC_AHBPeriphClockCmd(RCC_APB1Periph_I2C2, ENABLE);
+    RCC_APB1PeriphClockCmd(RCC_APB1Periph_I2C2, ENABLE);
 
     // TODO: Possibly configure DMA
 
@@ -30,7 +30,7 @@ void i2c_configure() {
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;
 	GPIO_InitStructure.GPIO_OType = GPIO_OType_OD;
 	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;
-	GPIO_Init(GPIOA, &GPIO_InitStructure);
+	GPIO_Init(GPIOB, &GPIO_InitStructure);
 
     GPIO_PinAFConfig(GPIOB, GPIO_PinSource10, GPIO_AF_1);
     GPIO_PinAFConfig(GPIOB, GPIO_PinSource11, GPIO_AF_1);
