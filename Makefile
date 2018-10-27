@@ -7,6 +7,7 @@ SRCS += system_stm32f0xx.c stm32f0xx_it.c
 SRCS += src/stepper.c \
 		src/usart.c \
 		src/i2c.c \
+		src/quaternion_filters.c \
 		src/std_utils.c
 S_SRCS = 
 
@@ -39,9 +40,12 @@ CFLAGS += -msoft-float
 # Default to STM32F051 if no device is passed
 ifeq ($(DEVICE_DEF), )
 DEVICE_DEF = STM32F051
+# Configure lib/CMSIS/Include/arm_math.h
+MATH_HEADER = ARM_MATH_CM0
 endif
 
 CFLAGS += -D$(DEVICE_DEF)
+CFLAGS += -D$(MATH_HEADER)
 
 #vpath %.c src
 vpath %.a lib
