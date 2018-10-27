@@ -76,9 +76,10 @@ void i2c_send(uint16_t address, uint16_t write_length, uint8_t *write_buffer, bo
     }
 }
 
-void i2c_receive(uint16_t address, uint16_t read_length, uint8_t *read_buffer) {
-    // Ensure I2C isn't busy
-    while(I2C_GetFlagStatus(I2C2, I2C_FLAG_BUSY) == SET);
+void i2c_receive(uint16_t address, uint16_t read_length, uint8_t *read_buffer, bool restart) {
+    // Ensure I2C isn't busy when not restarting
+    while(!restart && I2C_GetFlagStatus(I2C2, I2C_FLAG_BUSY) == SET);
+
     // Start the read
     // Automatically end the transmission
     I2C_TransferHandling(I2C2, address, read_length, I2C_AutoEnd_Mode, I2C_Generate_Start_Read);
@@ -104,5 +105,5 @@ static uint8_t _temp_write_buffer[] = {0, 0};
 void i2c_read_reg(uint16_t address, uint8_t reg, uint16_t read_length, uint8_t *read_buffer) {
     _temp_write_buffer[0] = reg;
     i2c_send(address, 1, _temp_write_buffer, false);
-    i2c_receive(address, read_length, read_buffer);
+    i2c_receive(address, read_length, read_buffer, true);
 }

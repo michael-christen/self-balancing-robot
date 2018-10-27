@@ -23,7 +23,7 @@ void init() {
 }
 
 
-int vain2(void) {
+int vain3(void) {
     usart_configure(9600);
     uint16_t val;
     usart_send_string("HELLO WORLD");
@@ -67,16 +67,27 @@ int vain(void) {
 	return 0;
 }
 
-// TODO: Check that we need to shift up by 1
+// TODO: Check if we need to shift down by 1
 #define MPU6050_ADDRESS (0xD0 << 1)
+#define ARDUINO_SLAVE (0x08 << 1)
 
 int main(void) {
     uint8_t read_buf[255];
+    uint8_t write_buf[255];
+    write_buf[0] = 0x00;
+    write_buf[1] = 0xDE;
+    write_buf[2] = 0xAD;
+    write_buf[3] = 0xBE;
+    write_buf[4] = 0xEF;
 
     init();
     i2c_configure();
-    i2c_read_reg(MPU6050_ADDRESS, 117, 1, read_buf);
-    i2c_read_reg(MPU6050_ADDRESS, 107, 1, read_buf+1);
+    // i2c_read_reg(MPU6050_ADDRESS, 117, 1, read_buf);
+    // i2c_read_reg(MPU6050_ADDRESS, 107, 1, read_buf+1);
+    i2c_send(ARDUINO_SLAVE, 5, write_buf, true);
+    write_buf[0] = 0xFF;
+    i2c_send(ARDUINO_SLAVE, 1, write_buf, false);
+    i2c_receive(ARDUINO_SLAVE, 8, read_buf, true);
     return 0;
 }
 
