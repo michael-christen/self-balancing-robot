@@ -1,29 +1,153 @@
 #include "inc/mpu_9250.h"
+#include "inc/i2c.h"
+#include "inc/std_utils.h"
+
+
+// TODO: Change when change set pin
+#define MPU9250_ADDRESS (MPU9250_ADDRESS_AD0 << 1)
+
+static uint8_t tmp_buf[16] = {0};
+typedef enum Gscale {
+  GFS_250DPS = 0,
+  GFS_500DPS,
+  GFS_1000DPS,
+  GFS_2000DPS
+} Gscale;
+
+
+uint8_t mpu_read_byte(uint8_t subaddress) {
+    i2c_read_reg(MPU9250_ADDRESS, subaddress, 1, tmp_buf);
+    return tmp_buf[0];
+}
+
+void mpu_write_byte(uint8_t subaddress, uint8_t byte) {
+    tmp_buf[0] = subaddress;
+    tmp_buf[1] = byte;
+    i2c_send(MPU9250_ADDRESS, 2, tmp_buf, true);
+}
+
+// Accelerometer and gyroscope self test; check calibration wrt factory settings
+// Should return percent deviation from factory trim values, +/- 14 or less
+// deviation is a pass.
+void mpu_self_test(float *destination) {
+  uint8_t rawData[6] = {0, 0, 0, 0, 0, 0};
+  uint8_t selfTest[6];
+  int32_t gAvg[3] = {0}, aAvg[3] = {0}, aSTAvg[3] = {0}, gSTAvg[3] = {0};
+  float factoryTrim[6];
+  uint8_t FS = GFS_250DPS;
+
+  mpu_write_byte(SMPLRT_DIV, 0x00);    // Set gyro sample rate to 1 kHz
+  mpu_write_byte(CONFIG, 0x02);        // Set gyro sample rate to 1 kHz and DLPF to 92 Hz
+  mpu_write_byte(GYRO_CONFIG, FS<<3);  // Set full scale range for the gyro to 250 dps
+  mpu_write_byte(ACCEL_CONFIG2, 0x02); // Set accelerometer rate to 1 kHz and bandwidth to 92 Hz
+  mpu_write_byte(ACCEL_CONFIG, FS<<3); // Set full scale range for the accelerometer to 2 g
+  for( int ii = 0; ii < 200; ii++) {  // get average current values of gyro and acclerometer
+  
+    i2c_read_reg(MPU9250_ADDRESS, ACCEL_XOUT_H, 6, rawData);        // Read the six raw data registers into data array
+    aAvg[0] += (int16_t)(((int16_t)rawData[0] << 8) | rawData[1]) ;  // Turn the MSB and LSB into a signed 16-bit value
+    aAvg[1] += (int16_t)(((int16_t)rawData[2] << 8) | rawData[3]) ;  
+    aAvg[2] += (int16_t)(((int16_t)rawData[4] << 8) | rawData[5]) ; 
+  
+    i2c_read_reg(MPU9250_ADDRESS, GYRO_XOUT_H, 6, rawData);       // Read the six raw data registers sequentially into data array
+    gAvg[0] += (int16_t)(((int16_t)rawData[0] << 8) | rawData[1]) ;  // Turn the MSB and LSB into a signed 16-bit value
+    gAvg[1] += (int16_t)(((int16_t)rawData[2] << 8) | rawData[3]) ;  
+    gAvg[2] += (int16_t)(((int16_t)rawData[4] << 8) | rawData[5]) ; 
+  }
+  // Get average of 200 values and store as average current readings
+  for (int ii =0; ii < 3; ii++)
+  {
+    aAvg[ii] /= 200;
+    gAvg[ii] /= 200;
+  }
+
+  // Configure the accelerometer for self-test
+  // Enable self test on all three axes and set accelerometer range to +/- 2 g
+  mpu_write_byte(ACCEL_CONFIG, 0xE0);
+  // Enable self test on all three axes and set gyro range to +/- 250 degrees/s
+  mpu_write_byte(GYRO_CONFIG,  0xE0);
+  // TODO: Define delay
+  delay(25000);  // Delay a while to let the device stabilize
+
+  // Get average self-test values of gyro and acclerometer
+  for (int ii = 0; ii < 200; ii++)
+  {
+    // Read the six raw data registers into data array
+    i2c_read_reg(MPU9250_ADDRESS, ACCEL_XOUT_H, 6, rawData);
+    // Turn the MSB and LSB into a signed 16-bit value
+    aSTAvg[0] += (int16_t)(((int16_t)rawData[0] << 8) | rawData[1]) ;
+    aSTAvg[1] += (int16_t)(((int16_t)rawData[2] << 8) | rawData[3]) ;
+    aSTAvg[2] += (int16_t)(((int16_t)rawData[4] << 8) | rawData[5]) ;
+
+    // Read the six raw data registers sequentially into data array
+    i2c_read_reg(MPU9250_ADDRESS, GYRO_XOUT_H, 6, rawData);
+    // Turn the MSB and LSB into a signed 16-bit value
+    gSTAvg[0] += (int16_t)(((int16_t)rawData[0] << 8) | rawData[1]) ;
+    gSTAvg[1] += (int16_t)(((int16_t)rawData[2] << 8) | rawData[3]) ;
+    gSTAvg[2] += (int16_t)(((int16_t)rawData[4] << 8) | rawData[5]) ;
+  }
+
+  // Get average of 200 values and store as average self-test readings
+  for (int ii =0; ii < 3; ii++)
+  {
+    aSTAvg[ii] /= 200;
+    gSTAvg[ii] /= 200;
+  }
+
+  // Configure the gyro and accelerometer for normal operation
+  mpu_write_byte(ACCEL_CONFIG, 0x00);
+  mpu_write_byte(GYRO_CONFIG,  0x00);
+  delay(25000);  // Delay a while to let the device stabilize
+
+
+  // Retrieve accelerometer and gyro factory Self-Test Code from USR_Reg
+  // X-axis accel self-test results
+  selfTest[0] = mpu_read_byte(SELF_TEST_X_ACCEL);
+  // Y-axis accel self-test results
+  selfTest[1] = mpu_read_byte(SELF_TEST_Y_ACCEL);
+  // Z-axis accel self-test results
+  selfTest[2] = mpu_read_byte(SELF_TEST_Z_ACCEL);
+  // X-axis gyro self-test results
+  selfTest[3] = mpu_read_byte(SELF_TEST_X_GYRO);
+  // Y-axis gyro self-test results
+  selfTest[4] = mpu_read_byte(SELF_TEST_Y_GYRO);
+  // Z-axis gyro self-test results
+  selfTest[5] = mpu_read_byte(SELF_TEST_Z_GYRO);
+
+  // Retrieve factory self-test value from self-test code reads
+  // FT[Xa] factory trim calculation
+  factoryTrim[0] = (float)(2620/1<<FS)*(pow(1.01 ,((float)selfTest[0] - 1.0) ));
+  // FT[Ya] factory trim calculation
+  factoryTrim[1] = (float)(2620/1<<FS)*(pow(1.01 ,((float)selfTest[1] - 1.0) ));
+  // FT[Za] factory trim calculation
+  factoryTrim[2] = (float)(2620/1<<FS)*(pow(1.01 ,((float)selfTest[2] - 1.0) ));
+  // FT[Xg] factory trim calculation
+  factoryTrim[3] = (float)(2620/1<<FS)*(pow(1.01 ,((float)selfTest[3] - 1.0) ));
+  // FT[Yg] factory trim calculation
+  factoryTrim[4] = (float)(2620/1<<FS)*(pow(1.01 ,((float)selfTest[4] - 1.0) ));
+  // FT[Zg] factory trim calculation
+  factoryTrim[5] = (float)(2620/1<<FS)*(pow(1.01 ,((float)selfTest[5] - 1.0) ));
+
+  // Report results as a ratio of (STR - FT)/FT; the change from Factory Trim
+  // of the Self-Test Response
+  // To get percent, must multiply by 100
+  for (int i = 0; i < 3; i++)
+  {
+    // Report percent differences
+    destination[i] = 100.0 * ((float)(aSTAvg[i] - aAvg[i])) / factoryTrim[i]
+      - 100.;
+    // Report percent differences
+    destination[i+3] = 100.0*((float)(gSTAvg[i] - gAvg[i]))/factoryTrim[i+3]
+      - 100.;
+  }
+}
+
 
 //==============================================================================
 //====== Set of useful function to access acceleration. gyroscope, magnetometer,
 //====== and temperature data
 //==============================================================================
-
-MPU9250::MPU9250( int8_t csPin, SPIClass &spiInterface, uint32_t spi_freq )
-{
-	// Use hardware SPI communication
-  	// If used with sparkfun breakout board
-  	// https://www.sparkfun.com/products/13762 , change the pre-soldered JP2 to
-  	// enable SPI (solder middle and left instead of middle and right) pads are
-  	// very small and re-soldering can be very tricky. I2C highly recommended.
-
-	_csPin = csPin;
-	_spi = &spiInterface;
-	_wire = NULL;
-
-	_interfaceSpeed = spi_freq;
-
-    _spi->begin();
-    pinMode(_csPin, OUTPUT);
-    deselect();
-
-}
+//
+#ifdef __cplusplus
 MPU9250::MPU9250( uint8_t address, TwoWire &wirePort, uint32_t clock_frequency )
 {
 	_I2Caddr = address;
@@ -501,122 +625,6 @@ void MPU9250::calibrateMPU9250(float * gyroBias, float * accelBias)
 }
 
 
-// Accelerometer and gyroscope self test; check calibration wrt factory settings
-// Should return percent deviation from factory trim values, +/- 14 or less
-// deviation is a pass.
-void MPU9250::MPU9250SelfTest(float * destination)
-{
-  uint8_t rawData[6] = {0, 0, 0, 0, 0, 0};
-  uint8_t selfTest[6];
-  int32_t gAvg[3] = {0}, aAvg[3] = {0}, aSTAvg[3] = {0}, gSTAvg[3] = {0};
-  float factoryTrim[6];
-  uint8_t FS = GFS_250DPS;
-   
-  writeByte(_I2Caddr, SMPLRT_DIV, 0x00);    // Set gyro sample rate to 1 kHz
-  writeByte(_I2Caddr, CONFIG, 0x02);        // Set gyro sample rate to 1 kHz and DLPF to 92 Hz
-  writeByte(_I2Caddr, GYRO_CONFIG, FS<<3);  // Set full scale range for the gyro to 250 dps
-  writeByte(_I2Caddr, ACCEL_CONFIG2, 0x02); // Set accelerometer rate to 1 kHz and bandwidth to 92 Hz
-  writeByte(_I2Caddr, ACCEL_CONFIG, FS<<3); // Set full scale range for the accelerometer to 2 g
-
-  for( int ii = 0; ii < 200; ii++) {  // get average current values of gyro and acclerometer
-  
-    readBytes(_I2Caddr, ACCEL_XOUT_H, 6, &rawData[0]);        // Read the six raw data registers into data array
-    aAvg[0] += (int16_t)(((int16_t)rawData[0] << 8) | rawData[1]) ;  // Turn the MSB and LSB into a signed 16-bit value
-    aAvg[1] += (int16_t)(((int16_t)rawData[2] << 8) | rawData[3]) ;  
-    aAvg[2] += (int16_t)(((int16_t)rawData[4] << 8) | rawData[5]) ; 
-  
-    readBytes(_I2Caddr, GYRO_XOUT_H, 6, &rawData[0]);       // Read the six raw data registers sequentially into data array
-    gAvg[0] += (int16_t)(((int16_t)rawData[0] << 8) | rawData[1]) ;  // Turn the MSB and LSB into a signed 16-bit value
-    gAvg[1] += (int16_t)(((int16_t)rawData[2] << 8) | rawData[3]) ;  
-    gAvg[2] += (int16_t)(((int16_t)rawData[4] << 8) | rawData[5]) ; 
-  }
-
-  // Get average of 200 values and store as average current readings
-  for (int ii =0; ii < 3; ii++)
-  {
-    aAvg[ii] /= 200;
-    gAvg[ii] /= 200;
-  }
-
-  // Configure the accelerometer for self-test
-  // Enable self test on all three axes and set accelerometer range to +/- 2 g
-  writeByte(_I2Caddr, ACCEL_CONFIG, 0xE0);
-  // Enable self test on all three axes and set gyro range to +/- 250 degrees/s
-  writeByte(_I2Caddr, GYRO_CONFIG,  0xE0);
-  delay(25);  // Delay a while to let the device stabilize
-
-  // Get average self-test values of gyro and acclerometer
-  for (int ii = 0; ii < 200; ii++)
-  {
-    // Read the six raw data registers into data array
-    readBytes(_I2Caddr, ACCEL_XOUT_H, 6, &rawData[0]);
-    // Turn the MSB and LSB into a signed 16-bit value
-    aSTAvg[0] += (int16_t)(((int16_t)rawData[0] << 8) | rawData[1]) ;
-    aSTAvg[1] += (int16_t)(((int16_t)rawData[2] << 8) | rawData[3]) ;
-    aSTAvg[2] += (int16_t)(((int16_t)rawData[4] << 8) | rawData[5]) ;
-
-    // Read the six raw data registers sequentially into data array
-    readBytes(_I2Caddr, GYRO_XOUT_H, 6, &rawData[0]);
-    // Turn the MSB and LSB into a signed 16-bit value
-    gSTAvg[0] += (int16_t)(((int16_t)rawData[0] << 8) | rawData[1]) ;
-    gSTAvg[1] += (int16_t)(((int16_t)rawData[2] << 8) | rawData[3]) ;
-    gSTAvg[2] += (int16_t)(((int16_t)rawData[4] << 8) | rawData[5]) ;
-  }
-
-  // Get average of 200 values and store as average self-test readings
-  for (int ii =0; ii < 3; ii++)
-  {
-    aSTAvg[ii] /= 200;
-    gSTAvg[ii] /= 200;
-  }
-
-  // Configure the gyro and accelerometer for normal operation
-  writeByte(_I2Caddr, ACCEL_CONFIG, 0x00);
-  writeByte(_I2Caddr, GYRO_CONFIG,  0x00);
-  delay(25);  // Delay a while to let the device stabilize
-
-  // Retrieve accelerometer and gyro factory Self-Test Code from USR_Reg
-  // X-axis accel self-test results
-  selfTest[0] = readByte(_I2Caddr, SELF_TEST_X_ACCEL);
-  // Y-axis accel self-test results
-  selfTest[1] = readByte(_I2Caddr, SELF_TEST_Y_ACCEL);
-  // Z-axis accel self-test results
-  selfTest[2] = readByte(_I2Caddr, SELF_TEST_Z_ACCEL);
-  // X-axis gyro self-test results
-  selfTest[3] = readByte(_I2Caddr, SELF_TEST_X_GYRO);
-  // Y-axis gyro self-test results
-  selfTest[4] = readByte(_I2Caddr, SELF_TEST_Y_GYRO);
-  // Z-axis gyro self-test results
-  selfTest[5] = readByte(_I2Caddr, SELF_TEST_Z_GYRO);
-
-  // Retrieve factory self-test value from self-test code reads
-  // FT[Xa] factory trim calculation
-  factoryTrim[0] = (float)(2620/1<<FS)*(pow(1.01 ,((float)selfTest[0] - 1.0) ));
-  // FT[Ya] factory trim calculation
-  factoryTrim[1] = (float)(2620/1<<FS)*(pow(1.01 ,((float)selfTest[1] - 1.0) ));
-  // FT[Za] factory trim calculation
-  factoryTrim[2] = (float)(2620/1<<FS)*(pow(1.01 ,((float)selfTest[2] - 1.0) ));
-  // FT[Xg] factory trim calculation
-  factoryTrim[3] = (float)(2620/1<<FS)*(pow(1.01 ,((float)selfTest[3] - 1.0) ));
-  // FT[Yg] factory trim calculation
-  factoryTrim[4] = (float)(2620/1<<FS)*(pow(1.01 ,((float)selfTest[4] - 1.0) ));
-  // FT[Zg] factory trim calculation
-  factoryTrim[5] = (float)(2620/1<<FS)*(pow(1.01 ,((float)selfTest[5] - 1.0) ));
-
-  // Report results as a ratio of (STR - FT)/FT; the change from Factory Trim
-  // of the Self-Test Response
-  // To get percent, must multiply by 100
-  for (int i = 0; i < 3; i++)
-  {
-    // Report percent differences
-    destination[i] = 100.0 * ((float)(aSTAvg[i] - aAvg[i])) / factoryTrim[i]
-      - 100.;
-    // Report percent differences
-    destination[i+3] = 100.0*((float)(gSTAvg[i] - gAvg[i]))/factoryTrim[i+3]
-      - 100.;
-  }
-}
-
 // Function which accumulates magnetometer data after device initialization.
 // It calculates the bias and scale in the x, y, and z axes.
 void MPU9250::magCalMPU9250(float * bias_dest, float * scale_dest)
@@ -994,10 +1002,12 @@ bool MPU9250::magInit()
 
   // TODO: Remove this code
   uint8_t ret = ak8963WhoAmI_SPI();
+/*
 #ifdef SERIAL_DEBUG
   Serial.print("MPU9250::magInit to return ");
   Serial.println((ret == 0x48) ? "true" : "false");
 #endif
+*/
   return ret == 0x48;
 }
 
@@ -1024,6 +1034,7 @@ uint8_t MPU9250::ak8963WhoAmI_SPI()
   oldSlaveAddress  = readByteSPI(I2C_SLV0_ADDR);
   oldSlaveRegister = readByteSPI(I2C_SLV0_REG);
   oldSlaveConfig   = readByteSPI(I2C_SLV0_CTRL);
+/*
 #ifdef SERIAL_DEBUG
   Serial.print("Old slave address: 0x");
   Serial.println(oldSlaveAddress, HEX);
@@ -1032,6 +1043,7 @@ uint8_t MPU9250::ak8963WhoAmI_SPI()
   Serial.print("Old slave config: 0x");
   Serial.println(oldSlaveConfig, HEX);
 #endif
+*/
 
   // Set the I2C slave addres of AK8963 and set for read
   response = writeByteSPI(I2C_SLV0_ADDR, AK8963_ADDRESS|READ_FLAG);
@@ -1050,3 +1062,4 @@ uint8_t MPU9250::ak8963WhoAmI_SPI()
 
   return response;
 }
+#endif  // __cplusplus

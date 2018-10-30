@@ -5,6 +5,8 @@
 extern "C" {
 #endif  // __cplusplus
 
+#include <stdint.h>
+
 // See also MPU-9250 Register Map and Descriptions, Revision 4.0,
 // RM-MPU-9250A-00, Rev. 1.4, 9/9/2013 for registers not listed in above
 // document; the MPU9250 and MPU9150 are virtually identical but the latter has
@@ -174,6 +176,9 @@ extern "C" {
 #define SPI_DATA_RATE 1000000 // 1MHz is the max speed of the MPU-9250
 #define SPI_MODE SPI_MODE3
 
+uint8_t mpu_read_byte(uint8_t subaddress);
+void mpu_self_test(float *destination);
+
 /*
 class MPU9250
 {
@@ -304,6 +309,3 @@ public:
 #ifdef __cplusplus
 }
 #endif  // __cplusplus
-
-#endif  // __MPU_9250_H
-

@@ -9,6 +9,7 @@
 #include "inc/i2c.h"
 #include "inc/std_utils.h"
 #include "inc/quaternion_filters.h"
+#include "inc/mpu_9250.h"
 
 #define BLINK_DELAY_US	(50)
 
@@ -83,19 +84,28 @@ int main(void) {
 
     init();
     i2c_configure();
-    // i2c_read_reg(MPU6050_ADDRESS, 117, 1, read_buf);
-    // i2c_read_reg(MPU6050_ADDRESS, 107, 1, read_buf+1);
+    /*
+    i2c_read_reg(MPU6050_ADDRESS, 117, 1, read_buf);
+    i2c_read_reg(MPU6050_ADDRESS, 107, 1, read_buf+1);
     i2c_send(ARDUINO_SLAVE, 5, write_buf, true);
     write_buf[0] = 0xFF;
     i2c_send(ARDUINO_SLAVE, 1, write_buf, false);
     i2c_receive(ARDUINO_SLAVE, 8, read_buf, true);
+    */
     MahonyQuaternionUpdate(
         0.0, 0.0, 0.0,
         0.0, 0.0, 0.0,
         0.0, 0.0, 0.0,
         1.0
     );
+    uint8_t val = mpu_read_byte(WHO_AM_I_MPU9250);
+    if(val != 0x71) {
+        for(;;);
+    }
+    float self_test[6];
+    mpu_self_test(self_test);
     float *q = getQ();
+    for(;;);
     return 0;
 }
 

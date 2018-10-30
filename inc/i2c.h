@@ -7,6 +7,8 @@ extern "C" {
 
 #include <stdint.h>
 
+#include "inc/std_utils.h"
+
 void i2c_configure();
 void i2c_send(uint16_t address, uint16_t write_length, uint8_t *write_buffer, bool stop);
 void i2c_receive(uint16_t address, uint16_t read_length, uint8_t *read_buffer, bool restart);

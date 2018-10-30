@@ -63,3 +63,10 @@ int ftoa(char *c_str, float val, uint32_t num_decimals) {
     }
     return i;
 }
+
+
+void delay(int duration) {
+   uint32_t cur_ticks = tickUs;
+   // TODO: Deal with overflow
+   while(tickUs > cur_ticks + duration);
+}
