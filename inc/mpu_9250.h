@@ -178,6 +178,21 @@ extern "C" {
 
 uint8_t mpu_read_byte(uint8_t subaddress);
 void mpu_self_test(float *destination);
+void mpu_calibrate(float * gyroBias, float * accelBias);
+void mpu_init(void);
+
+void mpu_init_mag(float *destination);
+
+void mpu_read_accel_data(int16_t * destination);
+void mpu_get_ares(void);
+
+void mpu_read_gyro_data(int16_t * destination);
+void mpu_get_gres(void);
+
+void mpu_read_mag_data(int16_t * destination);
+void mpu_get_mres(void);
+
+int16_t read_temp_data(void);
 
 /*
 class MPU9250
