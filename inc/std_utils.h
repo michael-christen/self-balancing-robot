@@ -5,6 +5,7 @@
 extern "C" {
 #endif  // __cplusplus
 
+#include <math.h>
 #include <stdint.h>
 
 #define false (0)
@@ -13,7 +14,6 @@ extern "C" {
 
 int itoa(char *c_str, uint32_t val, uint32_t num_decimals);
 int ftoa(char *c_str, float val, uint32_t num_decimals);
-float pow(float val, uint32_t exponent);
 void delay(int duration);
 
 extern volatile uint32_t tickUs;

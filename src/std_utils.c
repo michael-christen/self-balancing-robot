@@ -28,20 +28,6 @@ int itoa(char *c_str, uint32_t val, uint32_t num_decimals) {
 }
 
 
-float pow(float val, uint32_t exponent) {
-    float original_val = val;
-    if (exponent == 0) {
-        return 1;
-    } else if (exponent == 1) {
-        return val;
-    }
-    while(exponent > 1) {
-        val *= original_val;
-        exponent --;
-    }
-    return val;
-}
-
 
 /* Overwrite c_str with the string value of a floating point number.
  *
