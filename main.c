@@ -11,6 +11,7 @@
 #include "inc/quaternion_filters.h"
 #include "inc/mpu_9250.h"
 #include "inc/imu.h"
+#include "inc/profile.h"
 
 #define BLINK_DELAY_US	(50)
 
@@ -26,7 +27,7 @@ void init() {
 }
 
 
-int vain3(void) {
+int usart_example(void) {
     usart_configure(9600);
     usart_send_string("HELLO WORLD");
     char c_str[32];
@@ -39,10 +40,8 @@ int vain3(void) {
 }
 
 
-int vain(void) {
-
+int stepper_example(void) {
 	init();
-
 	RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOC, ENABLE);
 	GPIO_Init(
         GPIOC,
@@ -65,15 +64,12 @@ int vain(void) {
         stepper_next_action(&stepper0, tickUs);
 		__WFI();
 	}
-
 	return 0;
 }
 
-// TODO: Check if we need to shift down by 1
-#define MPU6050_ADDRESS (0xD0 << 1)
-#define ARDUINO_SLAVE (0x08 << 1)
 
 int i2c_example(void) {
+    const uint16_t ARDUINO_SLAVE = (0x08 << 1);
     uint8_t read_buf[255];
     uint8_t write_buf[255];
     write_buf[0] = 0x00;
@@ -84,8 +80,6 @@ int i2c_example(void) {
 
     init();
     i2c_configure();
-    i2c_read_reg(MPU6050_ADDRESS, 117, 1, read_buf);
-    i2c_read_reg(MPU6050_ADDRESS, 107, 1, read_buf+1);
     i2c_send(ARDUINO_SLAVE, 5, write_buf, true);
     write_buf[0] = 0xFF;
     i2c_send(ARDUINO_SLAVE, 1, write_buf, false);
@@ -93,23 +87,55 @@ int i2c_example(void) {
     return 0;
 }
 
+int delay_profile_example(void) {
+    init();
+    profile_init();
+    for(;;) {
+        delay(10);
+        profile_toggle();
+        delay(100);
+        profile_toggle();
+        delay(200);
+        profile_toggle();
+    }
+}
+
+
 int main(void) {
     euler_t angles;
+    char c_str[32];
 
     init();
+    usart_configure(9600);
     i2c_configure();
     int imu_init_err = imu_init();
     if (imu_init_err) {
         for(;;);
     }
+
+    uint32_t last_display = tickUs;
+    
     for (;;) {
         imu_get_euler_orientation(&angles);
         // TODO: Use PID loop to determine speed to set motors
-        // TODO: Every 0.5 second serially print the angles
+
+        // Every 0.5 second serially print the angles
+        if (tickUs - last_display  > 500000) {
+            usart_send_string("Orientation: ");
+            ftoa(c_str, angles.yaw, 2); usart_send_string(c_str);
+            usart_send_string(" ");
+            ftoa(c_str, angles.pitch, 2); usart_send_string(c_str);
+            usart_send_string(" ");
+            ftoa(c_str, angles.roll, 2); usart_send_string(c_str);
+            usart_send_string("\r\n");
+
+            last_display = tickUs;
+        }
     }
     for(;;);
     return 0;
 }
+
 
 void SysTick_Handler(void)
 {
