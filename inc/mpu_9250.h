@@ -177,6 +177,8 @@ extern "C" {
 #define SPI_MODE SPI_MODE3
 
 uint8_t mpu_read_byte(uint8_t subaddress);
+uint8_t mpu_mag_read_byte(uint8_t subaddress);
+
 void mpu_self_test(float *destination);
 void mpu_calibrate(float * gyroBias, float * accelBias);
 void mpu_init(void);
@@ -193,6 +195,8 @@ void mpu_read_mag_data(int16_t * destination);
 void mpu_get_mres(void);
 
 int16_t read_temp_data(void);
+
+extern float aRes, gRes, mRes;
 
 /*
 class MPU9250

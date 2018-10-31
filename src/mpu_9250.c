@@ -1,3 +1,10 @@
+/*
+ * TODO:
+ * - test
+ * - possibly wrap whole thing into imu package, get_euler_angles_from_imu
+ * - use structs instead of 3-6 length data arrays
+ *
+ */
 #include "inc/mpu_9250.h"
 #include "inc/i2c.h"
 #include "inc/std_utils.h"
@@ -34,7 +41,7 @@ Ascale A_SCALE = AFS_2G;
 Mscale M_SCALE = MFS_16BITS;
 Mmode M_MODE = M_8HZ;
 
-static float aRes, gRes, mRes;
+float aRes, gRes, mRes;
 
 
 uint8_t mpu_read_byte(uint8_t subaddress) {

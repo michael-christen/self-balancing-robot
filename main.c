@@ -10,6 +10,7 @@
 #include "inc/std_utils.h"
 #include "inc/quaternion_filters.h"
 #include "inc/mpu_9250.h"
+#include "inc/imu.h"
 
 #define BLINK_DELAY_US	(50)
 
@@ -27,12 +28,11 @@ void init() {
 
 int vain3(void) {
     usart_configure(9600);
-    uint16_t val;
     usart_send_string("HELLO WORLD");
     char c_str[32];
     ftoa(c_str, 13.24567, 7);
     while(1) {
-        val = usart_block_receive_char();
+        usart_block_receive_char();
         usart_send_string(c_str);
         usart_send_string("\r\n");
     }
@@ -73,7 +73,7 @@ int vain(void) {
 #define MPU6050_ADDRESS (0xD0 << 1)
 #define ARDUINO_SLAVE (0x08 << 1)
 
-int main(void) {
+int i2c_example(void) {
     uint8_t read_buf[255];
     uint8_t write_buf[255];
     write_buf[0] = 0x00;
@@ -84,27 +84,29 @@ int main(void) {
 
     init();
     i2c_configure();
-    /*
     i2c_read_reg(MPU6050_ADDRESS, 117, 1, read_buf);
     i2c_read_reg(MPU6050_ADDRESS, 107, 1, read_buf+1);
     i2c_send(ARDUINO_SLAVE, 5, write_buf, true);
     write_buf[0] = 0xFF;
     i2c_send(ARDUINO_SLAVE, 1, write_buf, false);
     i2c_receive(ARDUINO_SLAVE, 8, read_buf, true);
-    */
-    MahonyQuaternionUpdate(
-        0.0, 0.0, 0.0,
-        0.0, 0.0, 0.0,
-        0.0, 0.0, 0.0,
-        1.0
-    );
-    uint8_t val = mpu_read_byte(WHO_AM_I_MPU9250);
-    if(val != 0x71) {
+    return 0;
+}
+
+int main(void) {
+    euler_t angles;
+
+    init();
+    i2c_configure();
+    int imu_init_err = imu_init();
+    if (imu_init_err) {
         for(;;);
     }
-    float self_test[6];
-    mpu_self_test(self_test);
-    float *q = getQ();
+    for (;;) {
+        imu_get_euler_orientation(&angles);
+        // TODO: Use PID loop to determine speed to set motors
+        // TODO: Every 0.5 second serially print the angles
+    }
     for(;;);
     return 0;
 }

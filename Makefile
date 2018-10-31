@@ -9,6 +9,7 @@ SRCS += src/stepper.c \
 		src/i2c.c \
 		src/quaternion_filters.c \
 		src/mpu_9250.c \
+		src/imu.c \
 		src/std_utils.c
 S_SRCS = 
 
