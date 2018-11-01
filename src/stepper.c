@@ -59,4 +59,15 @@ void stepper_set_speed(stepper_t *stepper, uint16_t frequency) {
         TIM_OCIdleState_Set,     // IdleState
         TIM_OCIdleState_Reset,   // NIdleState
     });
+    // Configure Channel 2 too
+    TIM_OC2Init(TIM1, &(TIM_OCInitTypeDef){
+        TIM_OCMode_PWM1,         // OCMode
+        TIM_OutputState_Enable,  // OutputState
+        TIM_OutputNState_Enable, // OutputNState
+        ch1_pulse,               // Pulse
+        TIM_OCPolarity_Low,      // Polarity
+        TIM_OCNPolarity_High,    // NPolarity
+        TIM_OCIdleState_Set,     // IdleState
+        TIM_OCIdleState_Reset,   // NIdleState
+    });
 };

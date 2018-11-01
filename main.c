@@ -47,7 +47,7 @@ int main(void) {
 	GPIO_Init(
         GPIOC,
         &(GPIO_InitTypeDef){
-            GPIO_Pin_9 | GPIO_Pin_8,
+            GPIO_Pin_8 | GPIO_Pin_9,
             GPIO_Mode_OUT,
             GPIO_Speed_2MHz,
             GPIO_OType_PP,
@@ -55,20 +55,27 @@ int main(void) {
         });
     bool forward = true;
     uint32_t last_count = 0;
-    stepper_t stepper0 = stepper_init(GPIOC, GPIO_Pin_9, GPIO_Pin_8, BLINK_DELAY_US, forward, tickUs);
+    stepper_t stepper0 = stepper_init(
+        GPIOC,
+        GPIO_Pin_9,
+        GPIO_Pin_9 | GPIO_Pin_8,
+        BLINK_DELAY_US,
+        forward,
+        tickUs);
 
     // Timer based configuration
     RCC_AHBPeriphClockCmd( RCC_AHBPeriph_GPIOA, ENABLE);
 	GPIO_Init(
         GPIOA,
         &(GPIO_InitTypeDef){
-            GPIO_Pin_8,
+            GPIO_Pin_8 | GPIO_Pin_9,
             GPIO_Mode_AF,
             GPIO_Speed_50MHz,
             GPIO_OType_PP,
             GPIO_PuPd_UP
         });
     GPIO_PinAFConfig(GPIOA, GPIO_PinSource8, GPIO_AF_2);
+    GPIO_PinAFConfig(GPIOA, GPIO_PinSource9, GPIO_AF_2);
     /* TIM1 clock enable */
     RCC_APB2PeriphClockCmd(RCC_APB2Periph_TIM1 , ENABLE);
 
