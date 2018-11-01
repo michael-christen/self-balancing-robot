@@ -11,6 +11,12 @@ extern "C" {
 
 #include "inc/std_utils.h"
 
+/* TODO:
+ * - set_delay
+ * - TIMER based
+ *
+ */
+
 typedef struct stepper_t {
     uint32_t next_step;
     uint8_t state;

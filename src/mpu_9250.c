@@ -598,6 +598,7 @@ void mpu_get_mres() {
   }
 }
 
+// NOTE: UNUSED
 int16_t read_temp_data(void) {
   uint8_t rawData[2]; // x/y/z gyro register data stored here
   // Read the two raw data registers sequentially into data array
@@ -612,21 +613,6 @@ int16_t read_temp_data(void) {
 //==============================================================================
 //
 #ifdef __cplusplus
-
-// Calculate the time the last update took for use in the quaternion filters
-// TODO: This doesn't really belong in this class.
-void MPU9250::updateTime()
-{
-  Now = micros();
-
-  // Set integration time by time elapsed since last filter update
-  deltat = ((Now - lastUpdate) / 1000000.0f);
-  lastUpdate = Now;
-
-  sum += deltat; // sum for averaging filter update rate
-  sumCount++;
-}
-
 
 // Function which accumulates magnetometer data after device initialization.
 // It calculates the bias and scale in the x, y, and z axes.

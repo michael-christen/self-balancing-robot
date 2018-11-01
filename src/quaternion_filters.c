@@ -31,6 +31,7 @@
 // the faster the solution converges, usually at the expense of accuracy.
 // In any case, this is the free parameter in the Madgwick filtering and
 // fusion scheme.
+//
 // TODO: Deal w/ (Initializer element is not constant issue)
 // static float GyroMeasError = PI * (40.0f / 180.0f);
 // const float beta = sqrt(3.0f / 4.0f) * GyroMeasError;   // Compute beta
@@ -39,6 +40,7 @@ const float beta = 0.60459978807f;
 // Compute zeta, the other free parameter in the Madgwick scheme usually
 // set to a small or zero value
 // gyroscope measurement drift in rad/s/s (start at 0.0 deg/s/s)
+//
 // static float GyroMeasDrift = PI * (0.0f  / 180.0f);
 // TODO: Deal w/ (Initializer element is not constant issue)
 // const float zeta = sqrt(3.0f / 4.0f) * GyroMeasDrift;
