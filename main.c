@@ -126,6 +126,7 @@ int main(void) {
 
         // Every 0.5 second serially print the angles
         if (tickUs - last_display  > 500000) {
+            /*
             // Accelerometer data
             usart_send_string("ACC: ");
             ftoa(c_str, orientation.ax, 2); usart_send_string(c_str);
@@ -155,6 +156,7 @@ int main(void) {
             usart_send_string(" ");
             ftoa(c_str, q[3], 2); usart_send_string(c_str);
             usart_send_string("\r\n");
+            */
 
             // Yaw, Pitch, Roll
             usart_send_string("Orientation: ");
