@@ -17,6 +17,9 @@ imu_t orientation;
 static float mag_calibration[3];
 static float delta_t, sum;
 uint32_t last_update, sum_count;
+static int16_t accel_vals[3];
+static int16_t gyro_vals[3];
+static int16_t mag_vals[3];
 
 int imu_init(void) {
     // Check Connection
@@ -48,6 +51,16 @@ int imu_init(void) {
     orientation.ax = orientation.ay = orientation.az = 0;
     orientation.gx = orientation.gy = orientation.gz = 0;
     orientation.mx = orientation.my = orientation.mz = 0;
+    // Reset raw arrays
+    accel_vals[0] = 0;
+    accel_vals[1] = 0;
+    accel_vals[2] = 0;
+    gyro_vals[0] = 0;
+    gyro_vals[1] = 0;
+    gyro_vals[2] = 0;
+    mag_vals[0] = 0;
+    mag_vals[1] = 0;
+    mag_vals[2] = 0;
     // Reset last_update
     last_update = tickUs;
     return 0;
@@ -56,7 +69,6 @@ int imu_init(void) {
 int imu_get_euler_orientation(euler_t *angles) {
     if (mpu_read_byte(INT_STATUS) & 0x01) {
         // Accelerometer
-        int16_t accel_vals[3];
         mpu_read_accel_data(accel_vals);
         mpu_get_ares();
         // Now we'll calculate the accleration value into actual g's
@@ -65,7 +77,6 @@ int imu_get_euler_orientation(euler_t *angles) {
         orientation.ay = (float)accel_vals[1] * aRes; // - accelBias[1];
         orientation.az = (float)accel_vals[2] * aRes; // - accelBias[2];
 
-        int16_t gyro_vals[3];
         mpu_read_gyro_data(gyro_vals);
         mpu_get_gres();
         // Calculate the gyro value into actual degrees per second
@@ -74,7 +85,6 @@ int imu_get_euler_orientation(euler_t *angles) {
         orientation.gy = (float)gyro_vals[1] * gRes;
         orientation.gz = (float)gyro_vals[2] * gRes;
 
-        int16_t mag_vals[3];
         mpu_read_mag_data(mag_vals);
         mpu_get_mres();
         float mag_bias[3] = {

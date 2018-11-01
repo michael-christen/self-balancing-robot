@@ -127,7 +127,6 @@ int main(void) {
         // Every 0.5 second serially print the angles
         if (tickUs - last_display  > 500000) {
             // Accelerometer data
-            /*
             usart_send_string("ACC: ");
             ftoa(c_str, orientation.ax, 2); usart_send_string(c_str);
             usart_send_string(" ");
@@ -135,7 +134,27 @@ int main(void) {
             usart_send_string(" ");
             ftoa(c_str, orientation.az, 2); usart_send_string(c_str);
             usart_send_string("\r\n");
-            */
+
+            // Magnetometer data
+            usart_send_string("MAG: ");
+            ftoa(c_str, orientation.mx, 2); usart_send_string(c_str);
+            usart_send_string(" ");
+            ftoa(c_str, orientation.my, 2); usart_send_string(c_str);
+            usart_send_string(" ");
+            ftoa(c_str, orientation.mz, 2); usart_send_string(c_str);
+            usart_send_string("\r\n");
+
+            // Quaternion
+            float *q = getQ();
+            usart_send_string("QTN: ");
+            ftoa(c_str, q[0], 2); usart_send_string(c_str);
+            usart_send_string(" ");
+            ftoa(c_str, q[1], 2); usart_send_string(c_str);
+            usart_send_string(" ");
+            ftoa(c_str, q[2], 2); usart_send_string(c_str);
+            usart_send_string(" ");
+            ftoa(c_str, q[3], 2); usart_send_string(c_str);
+            usart_send_string("\r\n");
 
             // Yaw, Pitch, Roll
             usart_send_string("Orientation: ");
