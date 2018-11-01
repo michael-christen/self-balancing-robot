@@ -4,6 +4,7 @@
 #include "inc/mpu_9250.h"
 #include "inc/quaternion_filters.h"
 #include "inc/std_utils.h"
+#include "inc/usart.h"
 
 
 #define ERR_MPU_NOT_FOUND     (1)
@@ -27,9 +28,11 @@ int imu_init(void) {
     if(val != 0x71) {
         return ERR_MPU_NOT_FOUND;
     }
+    usart_send_string("MPU9250 Connected\r\n");
     // Check Trim
     float trim_percentage[6];
     mpu_self_test(trim_percentage);
+    usart_send_string("Self Test Completed\r\n");
     for (int i=0; i < 6; ++i) {
         if (trim_percentage[i] > 10.0) {
             return ERR_TRIM_TOO_HIGH;
@@ -39,14 +42,18 @@ int imu_init(void) {
     float gyro_bias[3];
     float accelerator_bias[3];
     mpu_calibrate(gyro_bias, accelerator_bias);
+    usart_send_string("Calibration Completed\r\n");
     // Initialize
     mpu_init();
+    usart_send_string("MPU Init Completed\r\n");
     // Check Magnet connection
     uint8_t who_is_mag = mpu_mag_read_byte(WHO_AM_I_AK8963);
     if (who_is_mag != 0x48) {
         return ERR_MPU_MAG_NOT_FOUND;
     }
+    usart_send_string("MPU Mag found\r\n");
     mpu_init_mag(mag_calibration);
+    usart_send_string("MPU Mag initialized\r\n");
     // Reset orientation
     orientation.ax = orientation.ay = orientation.az = 0;
     orientation.gx = orientation.gy = orientation.gz = 0;
