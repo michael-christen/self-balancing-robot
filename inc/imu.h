@@ -9,9 +9,17 @@ typedef struct euler_t {
     float yaw, pitch, roll;
 } euler_t;
 
+typedef struct imu_t {
+    float ax, ay, az;
+    float gx, gy, gz;
+    float mx, my, mz;
+} imu_t;
+
 
 int imu_init(void);
 int imu_get_euler_orientation(euler_t *angles);
+
+extern imu_t orientation;
 
 #ifdef __cplusplus
 }

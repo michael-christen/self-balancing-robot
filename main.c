@@ -107,11 +107,16 @@ int main(void) {
 
     init();
     usart_configure(9600);
+    usart_send_string("Configuring I2C\r\n");
     i2c_configure();
+    usart_send_string("Initializing IMU\r\n");
     int imu_init_err = imu_init();
     if (imu_init_err) {
+        usart_send_string("Failed to initialize IMU: ");
+        itoa(c_str, imu_init_err, 5); usart_send_string(c_str);
         for(;;);
     }
+    usart_send_string("Starting loop, retrieving Orientations\r\n");
 
     uint32_t last_display = tickUs;
     
@@ -121,6 +126,18 @@ int main(void) {
 
         // Every 0.5 second serially print the angles
         if (tickUs - last_display  > 500000) {
+            // Accelerometer data
+            /*
+            usart_send_string("ACC: ");
+            ftoa(c_str, orientation.ax, 2); usart_send_string(c_str);
+            usart_send_string(" ");
+            ftoa(c_str, orientation.ay, 2); usart_send_string(c_str);
+            usart_send_string(" ");
+            ftoa(c_str, orientation.az, 2); usart_send_string(c_str);
+            usart_send_string("\r\n");
+            */
+
+            // Yaw, Pitch, Roll
             usart_send_string("Orientation: ");
             ftoa(c_str, angles.yaw, 2); usart_send_string(c_str);
             usart_send_string(" ");

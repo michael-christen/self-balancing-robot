@@ -13,13 +13,7 @@
 #define RAD_TO_DEG ( 180.0f / M_PI )
 #define DEG_TO_RAD ( M_PI / 180.0f )
 
-typedef struct imu_t {
-    float ax, ay, az;
-    float gx, gy, gz;
-    float mx, my, mz;
-} imu_t;
-
-static imu_t orientation;
+imu_t orientation;
 static float mag_calibration[3];
 static float delta_t, sum;
 uint32_t last_update, sum_count;
@@ -34,7 +28,7 @@ int imu_init(void) {
     float trim_percentage[6];
     mpu_self_test(trim_percentage);
     for (int i=0; i < 6; ++i) {
-        if (trim_percentage[i] > 0.3) {
+        if (trim_percentage[i] > 10.0) {
             return ERR_TRIM_TOO_HIGH;
         }
     }
