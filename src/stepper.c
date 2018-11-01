@@ -32,19 +32,6 @@ void stepper_set_dir(stepper_t *stepper, bool forward) {
     }
 }
 
-void stepper_next_action(stepper_t *stepper, uint32_t current_ticks) {
-	if(current_ticks > stepper->next_step) {
-        stepper->next_step = stepper->step_delay + current_ticks;
-		if(stepper->state) {
-			GPIO_SetBits(stepper->gpio_port, stepper->step_pin);
-		} else {
-			GPIO_ResetBits(stepper->gpio_port, stepper->step_pin);
-		}
-		stepper->state ^= 1;
-	}
-}
-
-
 void stepper_set_speed(stepper_t *stepper, uint16_t frequency) {
     /* Compute the value to be set in ARR regiter to generate signal frequency  */
     uint16_t timer_period = (SystemCoreClock / frequency ) - 1;

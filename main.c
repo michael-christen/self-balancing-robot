@@ -103,7 +103,6 @@ int main(void) {
           stepper_set_speed(&stepper0, speeds[speed_index++]);
           speed_index %= 11;
         }
-        stepper_next_action(&stepper0, tickUs);
 		__WFI();
 	}
 	return 0;
