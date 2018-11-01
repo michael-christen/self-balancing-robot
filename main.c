@@ -40,8 +40,9 @@ int usart_example(void) {
 }
 
 
-int stepper_example(void) {
+int main(void) {
 	init();
+    // Configure direction pin/s
 	RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOC, ENABLE);
 	GPIO_Init(
         GPIOC,
@@ -55,11 +56,52 @@ int stepper_example(void) {
     bool forward = true;
     uint32_t last_count = 0;
     stepper_t stepper0 = stepper_init(GPIOC, GPIO_Pin_9, GPIO_Pin_8, BLINK_DELAY_US, forward, tickUs);
+
+    // Timer based configuration
+    RCC_AHBPeriphClockCmd( RCC_AHBPeriph_GPIOA, ENABLE);
+	GPIO_Init(
+        GPIOA,
+        &(GPIO_InitTypeDef){
+            GPIO_Pin_8,
+            GPIO_Mode_AF,
+            GPIO_Speed_50MHz,
+            GPIO_OType_PP,
+            GPIO_PuPd_UP
+        });
+    GPIO_PinAFConfig(GPIOA, GPIO_PinSource8, GPIO_AF_2);
+    /* TIM1 clock enable */
+    RCC_APB2PeriphClockCmd(RCC_APB2Periph_TIM1 , ENABLE);
+
+    uint16_t frequency = 400;  // Hz
+
+    stepper_set_speed(&stepper0, frequency);
+
+    /* TIM1 counter enable */
+    TIM_Cmd(TIM1, ENABLE);
+    /* TIM1 Main Output Enable */
+    TIM_CtrlPWMOutputs(TIM1, ENABLE);
+
+    uint16_t speeds[] = {
+            400,
+            800,
+            1000,
+            2000,
+            4000,
+            6000,
+            4000,
+            2000,
+            1000,
+            800,
+            400,
+    };
+    uint8_t speed_index = 0;
 	for(;;) {
         if (tickUs / 1000000 > last_count) {
           last_count += 1;
           forward = !forward;
-          stepper_set_dir(&stepper0, forward);
+          // stepper_set_dir(&stepper0, forward);
+          stepper_set_speed(&stepper0, speeds[speed_index++]);
+          speed_index %= 11;
         }
         stepper_next_action(&stepper0, tickUs);
 		__WFI();
@@ -101,7 +143,7 @@ int delay_profile_example(void) {
 }
 
 
-int main(void) {
+int imu_example(void) {
     euler_t angles;
     char c_str[32];
 

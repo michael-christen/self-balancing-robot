@@ -43,3 +43,33 @@ void stepper_next_action(stepper_t *stepper, uint32_t current_ticks) {
 		stepper->state ^= 1;
 	}
 }
+
+
+void stepper_set_speed(stepper_t *stepper, uint16_t frequency) {
+    /* Compute the value to be set in ARR regiter to generate signal frequency  */
+    uint16_t timer_period = (SystemCoreClock / frequency ) - 1;
+    /* Compute CCR1 value to generate a duty cycle at 50% for channel 1 */
+    uint16_t ch1_pulse = (uint16_t) (
+        ((uint32_t) 5 * (timer_period - 1)) / 10);
+
+    /* Time Base configuration */
+    TIM_TimeBaseInit(TIM1, &(TIM_TimeBaseInitTypeDef){
+        0,                  // Prescaler
+        TIM_CounterMode_Up, // CounterMode
+        timer_period,       // Period
+        0,                  // Clock Division
+        0                   // RepetitionCounter
+    });
+
+    /* Configuration in PWM mode */
+    TIM_OC1Init(TIM1, &(TIM_OCInitTypeDef){
+        TIM_OCMode_PWM1,         // OCMode
+        TIM_OutputState_Enable,  // OutputState
+        TIM_OutputNState_Enable, // OutputNState
+        ch1_pulse,               // Pulse
+        TIM_OCPolarity_Low,      // Polarity
+        TIM_OCNPolarity_High,    // NPolarity
+        TIM_OCIdleState_Set,     // IdleState
+        TIM_OCIdleState_Reset,   // NIdleState
+    });
+};

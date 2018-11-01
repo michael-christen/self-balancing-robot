@@ -35,6 +35,7 @@ stepper_t stepper_init(
     uint32_t current_ticks);
 
 void stepper_set_dir(stepper_t *stepper, bool forward);
+void stepper_set_speed(stepper_t *stepper, uint16_t frequency);
 
 void stepper_next_action(stepper_t *stepper, uint32_t current_ticks);
 
