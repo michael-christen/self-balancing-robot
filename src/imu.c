@@ -39,10 +39,25 @@ int imu_init(void) {
         }
     }
     // Calibrate
+    /*
     float gyro_bias[3];
-    float accelerator_bias[3];
-    mpu_calibrate(gyro_bias, accelerator_bias);
+    float accelerometer_bias[3];
+    char c_str[32];
+    mpu_calibrate(gyro_bias, accelerometer_bias);
     usart_send_string("Calibration Completed\r\n");
+    usart_send_string("GYRO Bias: ");
+    for (int i = 0; i < 3; ++i) {
+        ftoa(c_str, gyro_bias[i], 2); usart_send_string(c_str);
+        usart_send_string(" ");
+    }
+    usart_send_string("\r\n");
+    usart_send_string("ACC Bias: ");
+    for (int i = 0; i < 3; ++i) {
+        ftoa(c_str, accelerometer_bias[i], 2); usart_send_string(c_str);
+        usart_send_string(" ");
+    }
+    usart_send_string("\r\n");
+    */
     // Initialize
     mpu_init();
     usart_send_string("MPU Init Completed\r\n");
