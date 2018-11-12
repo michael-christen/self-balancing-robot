@@ -107,7 +107,6 @@ void mpu_self_test(float *destination) {
   mpu_write_byte(ACCEL_CONFIG, 0xE0);
   // Enable self test on all three axes and set gyro range to +/- 250 degrees/s
   mpu_write_byte(GYRO_CONFIG,  0xE0);
-  // TODO: Define delay
   delay(25);  // Delay a while to let the device stabilize
 
   // Get average self-test values of gyro and acclerometer

@@ -73,7 +73,7 @@ int imu_init(void) {
     return 0;
 }
 
-int imu_get_euler_orientation(euler_t *angles) {
+int imu_update_quaternion() {
     if (mpu_read_byte(INT_STATUS) & 0x01) {
         // Accelerometer
         mpu_read_accel_data(accel_vals);
@@ -83,7 +83,6 @@ int imu_get_euler_orientation(euler_t *angles) {
         orientation.ax = (float)accel_vals[0] * aRes; // - accelBias[0];
         orientation.ay = (float)accel_vals[1] * aRes; // - accelBias[1];
         orientation.az = (float)accel_vals[2] * aRes; // - accelBias[2];
-
         mpu_read_gyro_data(gyro_vals);
         mpu_get_gres();
         // Calculate the gyro value into actual degrees per second
@@ -110,6 +109,30 @@ int imu_get_euler_orientation(euler_t *angles) {
         orientation.mx = (float)mag_vals[0] * mRes * mag_calibration[0] - mag_bias[0];
         orientation.my = (float)mag_vals[1] * mRes * mag_calibration[1] - mag_bias[1];
         orientation.mz = (float)mag_vals[2] * mRes * mag_calibration[2] - mag_bias[2];
+        /*
+        char c_str[32];
+        usart_send_string("ACC: ");
+        ftoa(c_str, orientation.ax, 2); usart_send_string(c_str);
+        usart_send_string(" ");
+        ftoa(c_str, orientation.ay, 2); usart_send_string(c_str);
+        usart_send_string(" ");
+        ftoa(c_str, orientation.az, 2); usart_send_string(c_str);
+        usart_send_string("\r\n");
+        usart_send_string("GYR: ");
+        ftoa(c_str, orientation.gx, 2); usart_send_string(c_str);
+        usart_send_string(" ");
+        ftoa(c_str, orientation.gy, 2); usart_send_string(c_str);
+        usart_send_string(" ");
+        ftoa(c_str, orientation.gz, 2); usart_send_string(c_str);
+        usart_send_string("\r\n");
+        usart_send_string("MAG: ");
+        ftoa(c_str, orientation.mx, 2); usart_send_string(c_str);
+        usart_send_string(" ");
+        ftoa(c_str, orientation.my, 2); usart_send_string(c_str);
+        usart_send_string(" ");
+        ftoa(c_str, orientation.mz, 2); usart_send_string(c_str);
+        usart_send_string("\r\n");
+        */
     }
     uint32_t now = tickUs;
     // Set integration time by elapzed since last filter update
@@ -126,6 +149,10 @@ int imu_get_euler_orientation(euler_t *angles) {
         orientation.my, orientation.mx, orientation.mz,
         delta_t
     );
+    return 0;
+}
+
+int imu_get_euler_orientation(euler_t *angles) {
     const float *q = getQ();
     // Define output variables from updated quaternion---these are Tait-Bryan
     // angles, commonly used in aircraft orientation. In this coordinate system,

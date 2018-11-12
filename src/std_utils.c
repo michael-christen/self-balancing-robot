@@ -53,6 +53,8 @@ int ftoa(char *c_str, float val, uint32_t num_decimals) {
 
 void delay(int duration) {
    uint32_t cur_ticks = tickUs;
-   // TODO: Deal with overflow
-   while(tickUs < cur_ticks + (duration * 1000));
+   // TODO: when this multiplicator goes >= 1050 the accel z value goes to
+   // 1.89, it should be 1 at most
+   uint32_t time_to_wait = duration * 1045;
+   while((tickUs - cur_ticks) < time_to_wait);
 }

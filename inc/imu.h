@@ -17,6 +17,7 @@ typedef struct imu_t {
 
 
 int imu_init(void);
+int imu_update_quaternion();
 int imu_get_euler_orientation(euler_t *angles);
 
 extern imu_t orientation;
