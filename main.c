@@ -178,6 +178,31 @@ float constrf(float value, float smallest, float biggest) {
 }
 
 
+int vain(void) {
+    init();
+    usart_configure(9600);
+
+	char c_str[32];
+  
+	for (float x = -1; x < 1.5; x += 2) {
+        for (float y = -10.0; y < 10.0; y += 0.1) {
+          float z = atan2(y, x);
+          usart_send_string("ATAN2(");
+	      ftoa(c_str, y, 2); usart_send_string(c_str);
+	      usart_send_string("/");
+	      ftoa(c_str, x, 2); usart_send_string(c_str);
+          usart_send_string(") = ");
+	      ftoa(c_str, z, 2); usart_send_string(c_str);
+          usart_send_string("\r\n");
+	      // delay(100);
+        }
+	}
+  
+  /* z approaches -pi as y goes from -10 to 0 */
+  /* z approaches +pi as y goes from +10 to 0 */
+}
+
+
 int main(void) {
     euler_t angles;
     char c_str[32];
