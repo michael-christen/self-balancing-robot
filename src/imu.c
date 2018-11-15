@@ -125,6 +125,7 @@ int imu_update_quaternion() {
         orientation.my = (float)mag_vals[1] * mRes * mag_calibration[1] - mag_bias[1];
         orientation.mz = (float)mag_vals[2] * mRes * mag_calibration[2] - mag_bias[2];
         /*
+        */
         char c_str[32];
         usart_send_string("ACC: ");
         ftoa(c_str, orientation.ax, 2); usart_send_string(c_str);
@@ -147,7 +148,6 @@ int imu_update_quaternion() {
         usart_send_string(" ");
         ftoa(c_str, orientation.mz, 2); usart_send_string(c_str);
         usart_send_string("\r\n");
-        */
     }
     uint32_t now = tickUs;
     // Set integration time by elapzed since last filter update
@@ -190,12 +190,36 @@ int imu_get_euler_orientation(euler_t *angles) {
     angles->pitch = -asin(2.0f * (q[1] * q[3] - q[0] * q[2]));
     angles->roll  = atan2(2.0f * (q[0] * q[1] + q[2] * q[3]),
                           q[0] * q[0] - q[1] * q[1] - q[2] * q[2] + q[3] * q[3]);
+    // Raw accelerometer values, no yaw
+    /*
+    angles->pitch = atan2(orientation.ay,
+                          sqrt((orientation.ax * orientation.ax) +
+                               (orientation.az * orientation.az)));
+    angles->roll = atan2(-orientation.ax,
+                         sqrt((orientation.ay * orientation.ay) +
+                              (orientation.az * orientation.az)));
+
+    // OR
+
+    rollAcc = asin((float)orientation.ax) * RAD_TO_DEG;
+    pitchAcc = asin((float)orientation.ay) * RAD_TO_DEG;
+
+    roll -= orientation.gy * DEG_TO_RAD * (1000000.0 / PERIOD);
+    pitch += orientation.gx * DEG_TO_RAD * (1000000.0 / PERIOD);
+
+    // NOTE: roll ended up as 0xFFFFFF...
+    roll = roll * 0.999 + rollAcc * 0.01;
+    pitch = pitch * 0.999 + pitchAcc * 0.001;
+
+    */
+    angles->roll  *= RAD_TO_DEG;
     angles->pitch *= RAD_TO_DEG;
     angles->yaw   *= RAD_TO_DEG;
     // Declination of SparkFun Electronics (40°05'26.6"N 105°11'05.9"W) is
     // 	8° 30' E  ± 0° 21' (or 8.5°) on 2016-07-19
     // - http://www.ngdc.noaa.gov/geomag-web/#declination
-    angles->yaw   -= 8.5;
-    angles->roll  *= RAD_TO_DEG;
+    // Declination of zipcode 94118
+    // 	13° 25' E  ± 0° 20' (or 13.4°) on 2018-11-14
+    angles->yaw   -= 13.4;
     return 0;
 }

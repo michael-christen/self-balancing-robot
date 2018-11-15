@@ -283,6 +283,15 @@ int main(void) {
     for (;;) {
         last_loop = tickUs;
         imu_update_quaternion();
+        imu_get_euler_orientation(&angles);
+        // Yaw, Pitch, Roll
+        usart_send_string("Orientation: ");
+        ftoa(c_str, angles.yaw, 2); usart_send_string(c_str);
+        usart_send_string(" ");
+        ftoa(c_str, angles.pitch, 2); usart_send_string(c_str);
+        usart_send_string(" ");
+        ftoa(c_str, angles.roll, 2); usart_send_string(c_str);
+        usart_send_string("\r\n");
 
         float value = orientation.ay;
 
@@ -309,20 +318,6 @@ int main(void) {
             speed = 0;
         }
         */
-
-
-        /*
-        rollAcc = asin((float)orientation.ax) * RAD_TO_DEG;
-        pitchAcc = asin((float)orientation.ay) * RAD_TO_DEG;
-
-        roll -= orientation.gy * DEG_TO_RAD * (1000000.0 / PERIOD);
-        pitch += orientation.gx * DEG_TO_RAD * (1000000.0 / PERIOD);
-
-        // NOTE: roll ended up as 0xFFFFFF...
-        roll = roll * 0.999 + rollAcc * 0.01;
-        pitch = pitch * 0.999 + pitchAcc * 0.001;
-        */
-
         // TODO: Use PID loop to determine speed to set motors
 
         // Every 0.5 second serially print the angles
@@ -345,8 +340,9 @@ int main(void) {
             usart_send_string(" ");
             ftoa(c_str, pitch, 2); usart_send_string(c_str);
             usart_send_string("\r\n");
+            */
 
-            imu_get_euler_orientation(&angles);
+            /*
             // Accelerometer data
             usart_send_string("ACC: ");
             ftoa(c_str, orientation.ax, 2); usart_send_string(c_str);
@@ -376,8 +372,10 @@ int main(void) {
             usart_send_string(" ");
             ftoa(c_str, q[3], 2); usart_send_string(c_str);
             usart_send_string("\r\n");
+            */
 
             // Yaw, Pitch, Roll
+            /*
             usart_send_string("Orientation: ");
             ftoa(c_str, angles.yaw, 2); usart_send_string(c_str);
             usart_send_string(" ");
