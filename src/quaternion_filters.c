@@ -15,7 +15,7 @@
 
 // These are the free parameters in the Mahony filter and fusion scheme, Kp
 // for proportional feedback, Ki for integral
-#define Kp 2.0f * 5.0f
+#define Kp 1.5f * 5.0f
 #define Ki 0.0f
 
 // There is a tradeoff in the beta parameter between accuracy and response
