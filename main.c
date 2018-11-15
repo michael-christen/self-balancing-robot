@@ -284,6 +284,34 @@ int main(void) {
         last_loop = tickUs;
         imu_update_quaternion();
         imu_get_euler_orientation(&angles);
+
+        // Accelerometer data
+        usart_send_string("ACC: ");
+        ftoa(c_str, orientation.ax, 2); usart_send_string(c_str);
+        usart_send_string(" ");
+        ftoa(c_str, orientation.ay, 2); usart_send_string(c_str);
+        usart_send_string(" ");
+        ftoa(c_str, orientation.az, 2); usart_send_string(c_str);
+        usart_send_string("\r\n");
+
+        // Gyroscopic Data
+        usart_send_string("GYR: ");
+        ftoa(c_str, orientation.gx, 2); usart_send_string(c_str);
+        usart_send_string(" ");
+        ftoa(c_str, orientation.gy, 2); usart_send_string(c_str);
+        usart_send_string(" ");
+        ftoa(c_str, orientation.gz, 2); usart_send_string(c_str);
+        usart_send_string("\r\n");
+
+        // Magnetometer data
+        usart_send_string("MAG: ");
+        ftoa(c_str, orientation.mx, 2); usart_send_string(c_str);
+        usart_send_string(" ");
+        ftoa(c_str, orientation.my, 2); usart_send_string(c_str);
+        usart_send_string(" ");
+        ftoa(c_str, orientation.mz, 2); usart_send_string(c_str);
+        usart_send_string("\r\n");
+
         // Yaw, Pitch, Roll
         usart_send_string("Orientation: ");
         ftoa(c_str, angles.yaw, 2); usart_send_string(c_str);
@@ -342,25 +370,8 @@ int main(void) {
             usart_send_string("\r\n");
             */
 
+
             /*
-            // Accelerometer data
-            usart_send_string("ACC: ");
-            ftoa(c_str, orientation.ax, 2); usart_send_string(c_str);
-            usart_send_string(" ");
-            ftoa(c_str, orientation.ay, 2); usart_send_string(c_str);
-            usart_send_string(" ");
-            ftoa(c_str, orientation.az, 2); usart_send_string(c_str);
-            usart_send_string("\r\n");
-
-            // Magnetometer data
-            usart_send_string("MAG: ");
-            ftoa(c_str, orientation.mx, 2); usart_send_string(c_str);
-            usart_send_string(" ");
-            ftoa(c_str, orientation.my, 2); usart_send_string(c_str);
-            usart_send_string(" ");
-            ftoa(c_str, orientation.mz, 2); usart_send_string(c_str);
-            usart_send_string("\r\n");
-
             // Quaternion
             float *q = getQ();
             usart_send_string("QTN: ");

@@ -124,30 +124,6 @@ int imu_update_quaternion() {
         orientation.mx = (float)mag_vals[0] * mRes * mag_calibration[0] - mag_bias[0];
         orientation.my = (float)mag_vals[1] * mRes * mag_calibration[1] - mag_bias[1];
         orientation.mz = (float)mag_vals[2] * mRes * mag_calibration[2] - mag_bias[2];
-        /*
-        */
-        char c_str[32];
-        usart_send_string("ACC: ");
-        ftoa(c_str, orientation.ax, 2); usart_send_string(c_str);
-        usart_send_string(" ");
-        ftoa(c_str, orientation.ay, 2); usart_send_string(c_str);
-        usart_send_string(" ");
-        ftoa(c_str, orientation.az, 2); usart_send_string(c_str);
-        usart_send_string("\r\n");
-        usart_send_string("GYR: ");
-        ftoa(c_str, orientation.gx, 2); usart_send_string(c_str);
-        usart_send_string(" ");
-        ftoa(c_str, orientation.gy, 2); usart_send_string(c_str);
-        usart_send_string(" ");
-        ftoa(c_str, orientation.gz, 2); usart_send_string(c_str);
-        usart_send_string("\r\n");
-        usart_send_string("MAG: ");
-        ftoa(c_str, orientation.mx, 2); usart_send_string(c_str);
-        usart_send_string(" ");
-        ftoa(c_str, orientation.my, 2); usart_send_string(c_str);
-        usart_send_string(" ");
-        ftoa(c_str, orientation.mz, 2); usart_send_string(c_str);
-        usart_send_string("\r\n");
     }
     uint32_t now = tickUs;
     // Set integration time by elapzed since last filter update
