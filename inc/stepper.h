@@ -24,12 +24,14 @@ typedef struct stepper_t {
     GPIO_TypeDef *gpio_port;
     uint32_t step_pin;
     uint32_t dir_pin;
+    uint32_t enable_pin;
 } stepper_t;
 
 stepper_t stepper_init(
     GPIO_TypeDef *gpio_port,
     uint32_t step_pin,
     uint32_t dir_pin,
+    uint32_t enable_pin,
     uint32_t step_delay,
     bool forward,
     uint32_t current_ticks);

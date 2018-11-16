@@ -45,12 +45,12 @@ int usart_example(void) {
 
 int stepper_example(void) {
 	init();
-    // Configure direction pin/s
+    // Configure direction pin/s & enable pin
 	RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOC, ENABLE);
 	GPIO_Init(
         GPIOC,
         &(GPIO_InitTypeDef){
-            GPIO_Pin_8 | GPIO_Pin_9,
+            GPIO_Pin_8 | GPIO_Pin_9 | GPIO_Pin_7,
             GPIO_Mode_OUT,
             GPIO_Speed_2MHz,
             GPIO_OType_PP,
@@ -62,6 +62,7 @@ int stepper_example(void) {
         GPIOC,
         GPIO_Pin_9,
         GPIO_Pin_9 | GPIO_Pin_8,
+        GPIO_Pin_7,
         BLINK_DELAY_US,
         forward,
         tickUs);
@@ -202,6 +203,15 @@ int vain(void) {
   /* z approaches +pi as y goes from +10 to 0 */
 }
 
+const float MAX_PID_OUTPUT = 4000;
+const float MAX_SPEED = 25000;
+const float MIN_SPEED = 230;
+
+float get_motor_speed_from_pid(float pid_output) {
+    return (constrf(pid_output, -MAX_PID_OUTPUT, MAX_PID_OUTPUT) *
+            (MAX_SPEED / MAX_PID_OUTPUT));
+}
+
 
 int main(void) {
     euler_t angles;
@@ -220,12 +230,12 @@ int main(void) {
     }
     usart_send_string("Starting loop, retrieving Orientations\r\n");
 
-    // Configure direction pin/s
+    // Configure direction pin/s and enable pin
 	RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOC, ENABLE);
 	GPIO_Init(
         GPIOC,
         &(GPIO_InitTypeDef){
-            GPIO_Pin_8 | GPIO_Pin_9,
+            GPIO_Pin_8 | GPIO_Pin_9 | GPIO_Pin_7,
             GPIO_Mode_OUT,
             GPIO_Speed_2MHz,
             GPIO_OType_PP,
@@ -236,6 +246,7 @@ int main(void) {
         GPIOC,
         GPIO_Pin_9,
         GPIO_Pin_9 | GPIO_Pin_8,
+        GPIO_Pin_7,
         BLINK_DELAY_US,
         forward,
         tickUs);
@@ -266,65 +277,61 @@ int main(void) {
     uint32_t last_display = tickUs;
     uint32_t last_loop;
 
-    float speed = 0;
-
     float integral_error = 0;
     float last_pid_error = 0;
     float pid_output = 0;
     const float Kp = 100.0;
     const float Ki = 0.0;
-    const float Kd = 0.0;
-    const float MAX_SPEED = 45000;
-    const float MIN_SPEED = 230;
-    const float MAX_PID_OUTPUT = 4000;
+    const float Kd = 10.0;
     uint16_t motor_speed = 0;
+    /*
+    // Establish setpoint
+    float roll_sum = 0;
+    for (int i = 0; i < 200; ++i) {
+        imu_update_quaternion();
+        imu_get_euler_orientation(&angles);
+        roll_sum += angles.roll;
+    }
+    float setpoint = roll_sum / 200.0;
+    */
+    float setpoint = 1.25;
     for (;;) {
         last_loop = tickUs;
         imu_update_quaternion();
         imu_get_euler_orientation(&angles);
         // TODO: Proper PID
 
-        float value = angles.roll;
+        float error = angles.roll - setpoint;
 
-        float pid_error = value;
+        float pid_error = setpoint - angles.roll;
         integral_error += Ki * pid_error;
         integral_error = constrf(integral_error, -MAX_PID_OUTPUT, MAX_PID_OUTPUT);
         float error_derivative = pid_error - last_pid_error;
         pid_output = Kp * pid_error + integral_error + Kd * error_derivative;
 
-        if (value > 60 || value < -60) {
+        if (error > 60 || error < -60) {
             pid_output = 0;
             integral_error = 0;
         }
         last_pid_error = pid_error;
 
-        float speed = (
-            constrf(pid_output, -MAX_PID_OUTPUT, MAX_PID_OUTPUT) *
-            (MAX_SPEED / MAX_PID_OUTPUT));
-        bool dir = (speed < 0);
-        if (speed < 0) {
-            motor_speed = (uint16_t) (-speed);
-        } else {
-            motor_speed = (uint16_t) speed;
+        float speed = get_motor_speed_from_pid(pid_output);
+
+        bool dir = (speed > 0);
+        motor_speed = (uint16_t) fabs(speed);
+        if (error > -1.0 && error < 1.0) {
+            motor_speed = 0;
+        }
+        if (motor_speed < MIN_SPEED) {
+            motor_speed = 0;
         }
         stepper_set_dir(&stepper0, dir);
         stepper_set_speed(&stepper0, motor_speed);
-        /*
-        if (abs(speed) < MIN_SPEED) {
-            speed = 0;
-        }
-        */
         // TODO: Use PID loop to determine speed to set motors
 
         // Every 0.5 second serially print the angles
         if (tickUs - last_display  > 500000) {
             /*
-            usart_send_string("PID: ");
-            ftoa(c_str, pid_output, 2); usart_send_string(c_str);
-            usart_send_string("\r\n");
-            */
-
-
             // Accelerometer data
             usart_send_string("ACC: ");
             ftoa(c_str, orientation.ax, 2); usart_send_string(c_str);
@@ -351,6 +358,7 @@ int main(void) {
             usart_send_string(" ");
             ftoa(c_str, orientation.mz, 2); usart_send_string(c_str);
             usart_send_string("\r\n");
+            */
     
             // Yaw, Pitch, Roll
             usart_send_string("Orientation: ");
@@ -362,8 +370,6 @@ int main(void) {
             usart_send_string("\r\n");
 
             usart_send_string("Speed: ");
-            ftoa(c_str, speed, 2); usart_send_string(c_str);
-            usart_send_string(" ");
             itoa(c_str, motor_speed, 2); usart_send_string(c_str);
             usart_send_string("\r\n");
 
