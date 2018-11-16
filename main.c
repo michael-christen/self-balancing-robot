@@ -1,5 +1,7 @@
 #include <stdio.h>
 #include <stdint.h>
+// #include <stdlib.h>
+// #include <string.h>
 
 #include "stm32f0xx.h"
 #include "stm32f0xx_conf.h"
@@ -45,6 +47,8 @@ int usart_example(void) {
 
 int stepper_example(void) {
 	init();
+    usart_configure(9600);
+    usart_send_string("Enter a speed value, then hit enter:\r\n");
     // Configure direction pin/s & enable pin
 	RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOC, ENABLE);
 	GPIO_Init(
@@ -91,6 +95,28 @@ int stepper_example(void) {
     TIM_Cmd(TIM1, ENABLE);
     /* TIM1 Main Output Enable */
     TIM_CtrlPWMOutputs(TIM1, ENABLE);
+    float speed = 0;
+    char c_str[256];
+    for(;;) {
+        uint8_t idx = 0;
+        for(;;) {
+            char c = usart_block_receive_char();
+            usart_send_char(c);
+            c_str[idx++] = c;
+            if (c == '$') {
+                c_str[idx-1] = '\0';
+                break;
+            }
+        }
+        speed = atof(c_str);
+        usart_send_string("\r\nSetting speed to: ");
+        ftoa(c_str, speed, 0); usart_send_string(c_str);
+        usart_send_string("\r\n");
+        uint16_t motor_speed = (uint16_t) fabs(speed);
+        bool dir = speed < 0;
+        stepper_set_dir(&stepper0, dir);
+        stepper_set_speed(&stepper0, motor_speed);
+    }
 
     uint16_t speeds[] = {
             400,
@@ -204,12 +230,24 @@ int vain(void) {
 }
 
 const float MAX_PID_OUTPUT = 4000;
-const float MAX_SPEED = 25000;
-const float MIN_SPEED = 230;
+const float MAX_SPEED = 20000;
+const float MIN_SPEED = 200;
+const float MAX_ERROR = 30.0;
+const float MIN_ERROR = 1.0;
+// const float MAX_SPEED_DIFF = 200;
 
-float get_motor_speed_from_pid(float pid_output) {
-    return (constrf(pid_output, -MAX_PID_OUTPUT, MAX_PID_OUTPUT) *
-            (MAX_SPEED / MAX_PID_OUTPUT));
+float get_motor_speed_from_pid(float pid_output, float pid_error, float last_speed) {
+    float speed = (constrf(pid_output, -MAX_PID_OUTPUT, MAX_PID_OUTPUT) *
+                    (MAX_SPEED / MAX_PID_OUTPUT));
+    // float diff = constrf(speed - last_speed, -MAX_SPEED_DIFF, MAX_SPEED_DIFF);
+    // speed = last_speed + diff;
+    if (fabs(pid_error) < MIN_ERROR) {
+        return 0;
+    }
+    if (fabs(speed) < MIN_SPEED) {
+        return 0;
+    }
+    return speed;
 }
 
 
@@ -219,13 +257,16 @@ int main(void) {
 
     init();
     usart_configure(9600);
+    usart_send_string("Clock Frequency: ");
+    ftoa(c_str, SystemCoreClock, 2); usart_send_string(c_str);
+    usart_send_string("\r\n");
     usart_send_string("Configuring I2C\r\n");
     i2c_configure();
     usart_send_string("Initializing IMU\r\n");
     int imu_init_err = imu_init();
     if (imu_init_err) {
         usart_send_string("Failed to initialize IMU: ");
-        itoa(c_str, imu_init_err, 5); usart_send_string(c_str);
+        my_itoa(c_str, imu_init_err, 5); usart_send_string(c_str);
         for(;;);
     }
     usart_send_string("Starting loop, retrieving Orientations\r\n");
@@ -273,6 +314,7 @@ int main(void) {
     /* TIM1 Main Output Enable */
     TIM_CtrlPWMOutputs(TIM1, ENABLE);
 
+    profile_init();
 
     uint32_t last_display = tickUs;
     uint32_t last_loop;
@@ -280,10 +322,9 @@ int main(void) {
     float integral_error = 0;
     float last_pid_error = 0;
     float pid_output = 0;
-    const float Kp = 100.0;
+    const float Kp = 700.0;
     const float Ki = 0.0;
-    const float Kd = 10.0;
-    uint16_t motor_speed = 0;
+    const float Kd = 0.0;
     /*
     // Establish setpoint
     float roll_sum = 0;
@@ -294,44 +335,44 @@ int main(void) {
     }
     float setpoint = roll_sum / 200.0;
     */
-    float setpoint = 1.25;
+    float setpoint = 2.25;
+    float last_speed = 0;
     for (;;) {
+        profile_toggle();
         last_loop = tickUs;
+
         imu_update_quaternion();
         imu_get_euler_orientation(&angles);
+
         // TODO: Proper PID
-
-        float error = angles.roll - setpoint;
-
-        float pid_error = setpoint - angles.roll;
+        float pid_error = angles.roll - setpoint;
         integral_error += Ki * pid_error;
         integral_error = constrf(integral_error, -MAX_PID_OUTPUT, MAX_PID_OUTPUT);
         float error_derivative = pid_error - last_pid_error;
+
         pid_output = Kp * pid_error + integral_error + Kd * error_derivative;
 
-        if (error > 60 || error < -60) {
+        // Remove integral_error when crossover
+        if (last_pid_error * pid_error < 0) {
+            integral_error = 0;
+        }
+
+        last_pid_error = pid_error;
+
+        if (fabs(pid_error) > MAX_ERROR) {
             pid_output = 0;
             integral_error = 0;
         }
-        last_pid_error = pid_error;
 
-        float speed = get_motor_speed_from_pid(pid_output);
-
-        bool dir = (speed > 0);
-        motor_speed = (uint16_t) fabs(speed);
-        if (error > -1.0 && error < 1.0) {
-            motor_speed = 0;
-        }
-        if (motor_speed < MIN_SPEED) {
-            motor_speed = 0;
-        }
-        stepper_set_dir(&stepper0, dir);
-        stepper_set_speed(&stepper0, motor_speed);
-        // TODO: Use PID loop to determine speed to set motors
+        float speed = get_motor_speed_from_pid(pid_output, pid_error, last_speed);
+        last_speed = speed;
+        stepper_set_dir(&stepper0, (speed < 0));
+        stepper_set_speed(&stepper0, (uint16_t) fabs(speed));
 
         // Every 0.5 second serially print the angles
         if (tickUs - last_display  > 500000) {
             /*
+            float hz = imu_get_hz();
             // Accelerometer data
             usart_send_string("ACC: ");
             ftoa(c_str, orientation.ax, 2); usart_send_string(c_str);
@@ -358,7 +399,6 @@ int main(void) {
             usart_send_string(" ");
             ftoa(c_str, orientation.mz, 2); usart_send_string(c_str);
             usart_send_string("\r\n");
-            */
     
             // Yaw, Pitch, Roll
             usart_send_string("Orientation: ");
@@ -369,15 +409,27 @@ int main(void) {
             ftoa(c_str, angles.roll, 2); usart_send_string(c_str);
             usart_send_string("\r\n");
 
-            usart_send_string("Speed: ");
-            itoa(c_str, motor_speed, 2); usart_send_string(c_str);
+            usart_send_string("Error: ");
+            ftoa(c_str, pid_error, 2); usart_send_string(c_str);
             usart_send_string("\r\n");
+
+
+            usart_send_string("Speed: ");
+            ftoa(c_str, speed, 0); usart_send_string(c_str);
+            usart_send_string("\r\n");
+
+            usart_send_string("HZ: ");
+            ftoa(c_str, hz, 2); usart_send_string(c_str);
+            usart_send_string("\r\n");
+            */
 
             last_display = tickUs;
         }
+        /*
         if ((tickUs - last_loop) > PERIOD) {
             usart_send_string("ERROR loop too short\r\n");
         }
+        */
         while((tickUs - last_loop) < PERIOD);
     }
     for(;;);

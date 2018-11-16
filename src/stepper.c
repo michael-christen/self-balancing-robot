@@ -22,6 +22,7 @@ stepper_t stepper_init(
         .enable_pin = enable_pin,
     };
     stepper_set_dir(&this_stepper, forward);
+    stepper_set_speed(&this_stepper, 0);
     return this_stepper;
 }
 

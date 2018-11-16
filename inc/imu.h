@@ -20,6 +20,8 @@ int imu_init(void);
 int imu_update_quaternion();
 int imu_get_euler_orientation(euler_t *angles);
 
+float imu_get_hz(void);
+
 extern imu_t orientation;
 
 #ifdef __cplusplus

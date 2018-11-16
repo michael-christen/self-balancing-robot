@@ -143,6 +143,13 @@ int imu_update_quaternion() {
     return 0;
 }
 
+float imu_get_hz(void) {
+    float hz = (float)sum_count / (float)sum;
+    sum_count = 0;
+    sum = 0;
+    return hz;
+}
+
 int imu_get_euler_orientation(euler_t *angles) {
     const float *q = getQ();
     // Define output variables from updated quaternion---these are Tait-Bryan

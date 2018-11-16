@@ -12,7 +12,7 @@ extern "C" {
 #define true (1)
 #define bool uint8_t
 
-int itoa(char *c_str, uint32_t val, uint32_t num_decimals);
+int my_itoa(char *c_str, uint32_t val, uint32_t num_decimals);
 int ftoa(char *c_str, float val, uint32_t num_decimals);
 void delay(int duration);
 

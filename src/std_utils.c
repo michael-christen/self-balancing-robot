@@ -2,7 +2,7 @@
 
 #include "inc/std_utils.h"
 
-int itoa(char *c_str, uint32_t val, uint32_t num_decimals) {
+int my_itoa(char *c_str, uint32_t val, uint32_t num_decimals) {
 	int i = 0;
     int total_len = 0;
 	if(val == 0) {
@@ -42,10 +42,10 @@ int ftoa(char *c_str, float val, uint32_t num_decimals) {
     // Separate out integer from fraction
     uint32_t int_val = (uint32_t)val;
     float f_val = val - (float)int_val;
-    i += itoa(c_str + i, int_val, 0);
+    i += my_itoa(c_str + i, int_val, 0);
     if (num_decimals > 0) {
         c_str[i++] = '.';
-        i += itoa(c_str + i, (uint32_t)(f_val * pow(10, num_decimals)), num_decimals);
+        i += my_itoa(c_str + i, (uint32_t)(f_val * pow(10, num_decimals)), num_decimals);
     }
     return i;
 }
