@@ -1,7 +1,5 @@
 #include <stdio.h>
 #include <stdint.h>
-// #include <stdlib.h>
-// #include <string.h>
 
 #include "stm32f0xx.h"
 #include "stm32f0xx_conf.h"
@@ -98,17 +96,7 @@ int stepper_example(void) {
     float speed = 0;
     char c_str[256];
     for(;;) {
-        uint8_t idx = 0;
-        for(;;) {
-            char c = usart_block_receive_char();
-            usart_send_char(c);
-            c_str[idx++] = c;
-            if (c == '$') {
-                c_str[idx-1] = '\0';
-                break;
-            }
-        }
-        speed = atof(c_str);
+        speed = usart_block_receive_float();
         usart_send_string("\r\nSetting speed to: ");
         ftoa(c_str, speed, 0); usart_send_string(c_str);
         usart_send_string("\r\n");
@@ -322,9 +310,9 @@ int main(void) {
     float integral_error = 0;
     float last_pid_error = 0;
     float pid_output = 0;
-    const float Kp = 700.0;
-    const float Ki = 0.0;
-    const float Kd = 0.0;
+    float Kp = 700.0;
+    float Ki = 0.0;
+    float Kd = 0.0;
     /*
     // Establish setpoint
     float roll_sum = 0;
@@ -353,7 +341,45 @@ int main(void) {
                 usart_send_string("Toggling verbosity!\r\n");
                 verbose = !verbose;
                 break;
+            case 'p':
+                usart_send_string("Reconfiguring PID: \r\n");
+
+                usart_send_string("P: ");
+                ftoa(c_str, Kp, 2); usart_send_string(c_str);
+                usart_send_string("\r\n");
+                usart_send_string("I: ");
+                ftoa(c_str, Ki, 2); usart_send_string(c_str);
+                usart_send_string("\r\n");
+                usart_send_string("D: ");
+                ftoa(c_str, Kd, 2); usart_send_string(c_str);
+                usart_send_string("\r\n");
+
+                usart_send_string("Enter the new P value, then $: ");
+                Kp = usart_block_receive_float();
+                usart_send_string("\r\n");
+                usart_send_string("Enter the new I value, then $: ");
+                Ki = usart_block_receive_float();
+                usart_send_string("\r\n");
+                usart_send_string("Enter the new D value, then $: ");
+                Kd = usart_block_receive_float();
+                usart_send_string("\r\n");
+
+                usart_send_string("New PID Values:\r\n");
+                usart_send_string("P: ");
+                ftoa(c_str, Kp, 2); usart_send_string(c_str);
+                usart_send_string("\r\n");
+                usart_send_string("I: ");
+                ftoa(c_str, Ki, 2); usart_send_string(c_str);
+                usart_send_string("\r\n");
+                usart_send_string("D: ");
+                ftoa(c_str, Kd, 2); usart_send_string(c_str);
+                usart_send_string("\r\n");
+                break;
+            case '\0':
+                break;
             default:
+                usart_send_string("Unknown character "); usart_send_char(rx_c);
+                usart_send_string(". Known values are s, p, and v.\r\n");
                 break;
         }
         imu_update_quaternion();

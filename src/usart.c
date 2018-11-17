@@ -1,7 +1,9 @@
+#include <stdint.h>
+#include <stdlib.h>
+#include <string.h>
+
 #include "stm32f0xx.h"
 #include "stm32f0xx_conf.h"
-
-#include <stdint.h>
 
 void usart_configure(uint32_t baud_rate) {
 	USART_InitTypeDef USART_InitStructure;
@@ -47,6 +49,20 @@ char usart_nonblock_receive_char() {
     } else {
         return (char) 0;
     }
+}
+
+float usart_block_receive_float() {
+    char c_str[256];
+    uint8_t idx = 0;
+    for(;;) {
+        char c = usart_block_receive_char();
+        c_str[idx++] = c;
+        if (c == '$') {
+            c_str[idx-1] = '\0';
+            break;
+        }
+    }
+    return atof(c_str);
 }
 
 void usart_send_char(char c) {
