@@ -9,6 +9,7 @@ extern "C" {
 
 void usart_configure(uint32_t baud_rate);
 char usart_block_receive_char();
+char usart_nonblock_receive_char();
 void usart_send_char(char c);
 void usart_send_string(const char *c_str);
 

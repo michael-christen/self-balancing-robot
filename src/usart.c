@@ -41,6 +41,14 @@ char usart_block_receive_char() {
 	return USART_ReceiveData(USART2);
 }
 
+char usart_nonblock_receive_char() {
+	if (USART_GetFlagStatus(USART2, USART_FLAG_RXNE) != RESET) {
+	    return USART_ReceiveData(USART2);
+    } else {
+        return (char) 0;
+    }
+}
+
 void usart_send_char(char c) {
 	// Wait until we can send a character
 	while (USART_GetFlagStatus(USART2, USART_FLAG_TXE) == RESET);

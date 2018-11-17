@@ -231,9 +231,9 @@ int vain(void) {
 
 const float MAX_PID_OUTPUT = 4000;
 const float MAX_SPEED = 20000;
-const float MIN_SPEED = 200;
+const float MIN_SPEED = 100;
 const float MAX_ERROR = 30.0;
-const float MIN_ERROR = 1.0;
+const float MIN_ERROR = 0.0;
 // const float MAX_SPEED_DIFF = 200;
 
 float get_motor_speed_from_pid(float pid_output, float pid_error, float last_speed) {
@@ -337,10 +337,25 @@ int main(void) {
     */
     float setpoint = 2.25;
     float last_speed = 0;
+    bool verbose = false;
     for (;;) {
         profile_toggle();
         last_loop = tickUs;
 
+        char rx_c = usart_nonblock_receive_char();
+        switch(rx_c) {
+            case 's':
+                setpoint = angles.roll;
+                usart_send_string("Resetting setpoint to: ");
+                ftoa(c_str, setpoint, 2); usart_send_string(c_str); usart_send_string("\r\n");
+                break;
+            case 'v':
+                usart_send_string("Toggling verbosity!\r\n");
+                verbose = !verbose;
+                break;
+            default:
+                break;
+        }
         imu_update_quaternion();
         imu_get_euler_orientation(&angles);
 
@@ -371,58 +386,58 @@ int main(void) {
 
         // Every 0.5 second serially print the angles
         if (tickUs - last_display  > 500000) {
-            /*
-            float hz = imu_get_hz();
-            // Accelerometer data
-            usart_send_string("ACC: ");
-            ftoa(c_str, orientation.ax, 2); usart_send_string(c_str);
-            usart_send_string(" ");
-            ftoa(c_str, orientation.ay, 2); usart_send_string(c_str);
-            usart_send_string(" ");
-            ftoa(c_str, orientation.az, 2); usart_send_string(c_str);
-            usart_send_string("\r\n");
+            if (verbose) {
+                /*
+                // Accelerometer data
+                usart_send_string("ACC: ");
+                ftoa(c_str, orientation.ax, 2); usart_send_string(c_str);
+                usart_send_string(" ");
+                ftoa(c_str, orientation.ay, 2); usart_send_string(c_str);
+                usart_send_string(" ");
+                ftoa(c_str, orientation.az, 2); usart_send_string(c_str);
+                usart_send_string("\r\n");
     
-            // Gyroscopic Data
-            usart_send_string("GYR: ");
-            ftoa(c_str, orientation.gx, 2); usart_send_string(c_str);
-            usart_send_string(" ");
-            ftoa(c_str, orientation.gy, 2); usart_send_string(c_str);
-            usart_send_string(" ");
-            ftoa(c_str, orientation.gz, 2); usart_send_string(c_str);
-            usart_send_string("\r\n");
+                // Gyroscopic Data
+                usart_send_string("GYR: ");
+                ftoa(c_str, orientation.gx, 2); usart_send_string(c_str);
+                usart_send_string(" ");
+                ftoa(c_str, orientation.gy, 2); usart_send_string(c_str);
+                usart_send_string(" ");
+                ftoa(c_str, orientation.gz, 2); usart_send_string(c_str);
+                usart_send_string("\r\n");
     
-            // Magnetometer data
-            usart_send_string("MAG: ");
-            ftoa(c_str, orientation.mx, 2); usart_send_string(c_str);
-            usart_send_string(" ");
-            ftoa(c_str, orientation.my, 2); usart_send_string(c_str);
-            usart_send_string(" ");
-            ftoa(c_str, orientation.mz, 2); usart_send_string(c_str);
-            usart_send_string("\r\n");
+                // Magnetometer data
+                usart_send_string("MAG: ");
+                ftoa(c_str, orientation.mx, 2); usart_send_string(c_str);
+                usart_send_string(" ");
+                ftoa(c_str, orientation.my, 2); usart_send_string(c_str);
+                usart_send_string(" ");
+                ftoa(c_str, orientation.mz, 2); usart_send_string(c_str);
+                usart_send_string("\r\n");
+                */
     
-            // Yaw, Pitch, Roll
-            usart_send_string("Orientation: ");
-            ftoa(c_str, angles.yaw, 2); usart_send_string(c_str);
-            usart_send_string(" ");
-            ftoa(c_str, angles.pitch, 2); usart_send_string(c_str);
-            usart_send_string(" ");
-            ftoa(c_str, angles.roll, 2); usart_send_string(c_str);
-            usart_send_string("\r\n");
+                // Yaw, Pitch, Roll
+                usart_send_string("Orientation: ");
+                ftoa(c_str, angles.yaw, 2); usart_send_string(c_str);
+                usart_send_string(" ");
+                ftoa(c_str, angles.pitch, 2); usart_send_string(c_str);
+                usart_send_string(" ");
+                ftoa(c_str, angles.roll, 2); usart_send_string(c_str);
+                usart_send_string("\r\n");
 
-            usart_send_string("Error: ");
-            ftoa(c_str, pid_error, 2); usart_send_string(c_str);
-            usart_send_string("\r\n");
+                usart_send_string("Error: ");
+                ftoa(c_str, pid_error, 2); usart_send_string(c_str);
+                usart_send_string("\r\n");
 
 
-            usart_send_string("Speed: ");
-            ftoa(c_str, speed, 0); usart_send_string(c_str);
-            usart_send_string("\r\n");
+                usart_send_string("Speed: ");
+                ftoa(c_str, speed, 0); usart_send_string(c_str);
+                usart_send_string("\r\n");
 
-            usart_send_string("HZ: ");
-            ftoa(c_str, hz, 2); usart_send_string(c_str);
-            usart_send_string("\r\n");
-            */
-
+                usart_send_string("HZ: ");
+                ftoa(c_str, imu_get_hz(), 2); usart_send_string(c_str);
+                usart_send_string("\r\n");
+            }
             last_display = tickUs;
         }
         /*
