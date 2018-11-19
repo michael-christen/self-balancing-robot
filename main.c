@@ -412,10 +412,12 @@ int main(void) {
 
         pid_output = Kp * pid_error + integral_error + Kd * error_derivative;
 
+        /*
         // Remove integral_error when crossover
         if (last_pid_error * pid_error < 0) {
             integral_error = 0;
         }
+        */
 
         last_pid_error = pid_error;
 
