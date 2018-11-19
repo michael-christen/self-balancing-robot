@@ -219,9 +219,9 @@ int vain(void) {
 
 const float MAX_PID_OUTPUT = 4000;
 const float MAX_SPEED = 20000;
-const float MIN_SPEED = 100;
+const float MIN_SPEED = 1;
 const float MAX_ERROR = 30.0;
-const float MIN_ERROR = 0.0;
+float MIN_ERROR = 0.0;
 // const float MAX_SPEED_DIFF = 200;
 
 float get_motor_speed_from_pid(float pid_output, float pid_error, float last_speed) {
@@ -238,13 +238,16 @@ float get_motor_speed_from_pid(float pid_output, float pid_error, float last_spe
     return speed;
 }
 
+// #define BAUD_RATE 9600
+#define BAUD_RATE 57600
+
 
 int main(void) {
     euler_t angles;
     char c_str[32];
 
     init();
-    usart_configure(9600);
+    usart_configure(BAUD_RATE);
     usart_send_string("Clock Frequency: ");
     ftoa(c_str, SystemCoreClock, 2); usart_send_string(c_str);
     usart_send_string("\r\n");
@@ -310,9 +313,9 @@ int main(void) {
     float integral_error = 0;
     float last_pid_error = 0;
     float pid_output = 0;
-    float Kp = 700.0;
-    float Ki = 0.0;
-    float Kd = 0.0;
+    float Kp = 100.0;  // 1000
+    float Ki = 50.0;  // 5
+    float Kd = 35.0;  // 350
     /*
     // Establish setpoint
     float roll_sum = 0;
@@ -323,7 +326,7 @@ int main(void) {
     }
     float setpoint = roll_sum / 200.0;
     */
-    float setpoint = 2.25;
+    float setpoint = 3.0;
     float last_speed = 0;
     bool verbose = false;
     for (;;) {
@@ -375,11 +378,27 @@ int main(void) {
                 ftoa(c_str, Kd, 2); usart_send_string(c_str);
                 usart_send_string("\r\n");
                 break;
+            case 'k':
+                Kp = 0; Ki = 0; Kd = 0;
+                break;
+            case 'm':
+                usart_send_string("Changing MIN_ERROR: \r\n");
+                ftoa(c_str, MIN_ERROR, 2); usart_send_string(c_str);
+                usart_send_string("\r\n");
+
+                usart_send_string("Enter the new MIN_ERROR value, then $: ");
+                MIN_ERROR = usart_block_receive_float();
+                usart_send_string("\r\n");
+
+                usart_send_string("MIN_ERROR: \r\n");
+                ftoa(c_str, MIN_ERROR, 2); usart_send_string(c_str);
+                usart_send_string("\r\n");
+                break;
             case '\0':
                 break;
             default:
                 usart_send_string("Unknown character "); usart_send_char(rx_c);
-                usart_send_string(". Known values are s, p, and v.\r\n");
+                usart_send_string(". Known values are [s, p, v, k, m]\r\n");
                 break;
         }
         imu_update_quaternion();
