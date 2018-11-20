@@ -340,14 +340,6 @@ int main(void) {
                 usart_send_string("Resetting setpoint to: ");
                 ftoa(c_str, setpoint, 2); usart_send_string(c_str); usart_send_string("\r\n");
                 break;
-            case 'S':
-                usart_send_string("Setpoint: ");
-                ftoa(c_str, setpoint, 2); usart_send_string(c_str); usart_send_string("\r\n");
-                usart_send_string("Enter the new setpoint, then $: ");
-                setpoint = usart_block_receive_float();
-                usart_send_string("\r\n");
-                ftoa(c_str, setpoint, 2); usart_send_string(c_str); usart_send_string("\r\n");
-                break;
             case 'v':
                 usart_send_string("Toggling verbosity!\r\n");
                 verbose = !verbose;
@@ -386,6 +378,18 @@ int main(void) {
                 ftoa(c_str, Kd, 2); usart_send_string(c_str);
                 usart_send_string("\r\n");
                 break;
+            case 'S':
+                setpoint = usart_block_receive_float();
+                break;
+            case 'P':
+                Kp = usart_block_receive_float();
+                break;
+            case 'I':
+                Ki = usart_block_receive_float();
+                break;
+            case 'D':
+                Kd = usart_block_receive_float();
+                break;
             case 'k':
                 Kp = 0; Ki = 0; Kd = 0;
                 break;
@@ -406,7 +410,7 @@ int main(void) {
                 break;
             default:
                 usart_send_string("Unknown character "); usart_send_char(rx_c);
-                usart_send_string(". Known values are [S, s, p, v, k, m]\r\n");
+                usart_send_string(". Known values are [S, s, p, v, k, m, P, I, D]\r\n");
                 break;
         }
         imu_update_quaternion();

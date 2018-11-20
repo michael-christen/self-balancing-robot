@@ -1,3 +1,8 @@
+/*
+ * TODO:
+ * - configure interrupts to fill and dump buffers
+ *
+ */
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
