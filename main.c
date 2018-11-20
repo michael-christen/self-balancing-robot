@@ -336,8 +336,15 @@ int main(void) {
         char rx_c = usart_nonblock_receive_char();
         switch(rx_c) {
             case 's':
-                setpoint = angles.roll;
+                usart_send_string("Setpoint: ");
+                ftoa(c_str, setpoint, 2); usart_send_string(c_str); usart_send_string("\r\n");
                 usart_send_string("Resetting setpoint to: ");
+                ftoa(c_str, setpoint, 2); usart_send_string(c_str); usart_send_string("\r\n");
+                break;
+            case 'S':
+                usart_send_string("Enter the new setpoint, then $: ");
+                setpoint = usart_block_receive_float();
+                usart_send_string("\r\n");
                 ftoa(c_str, setpoint, 2); usart_send_string(c_str); usart_send_string("\r\n");
                 break;
             case 'v':
@@ -398,7 +405,7 @@ int main(void) {
                 break;
             default:
                 usart_send_string("Unknown character "); usart_send_char(rx_c);
-                usart_send_string(". Known values are [s, p, v, k, m]\r\n");
+                usart_send_string(". Known values are [S, s, p, v, k, m]\r\n");
                 break;
         }
         imu_update_quaternion();
