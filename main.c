@@ -336,12 +336,13 @@ int main(void) {
         char rx_c = usart_nonblock_receive_char();
         switch(rx_c) {
             case 's':
-                usart_send_string("Setpoint: ");
-                ftoa(c_str, setpoint, 2); usart_send_string(c_str); usart_send_string("\r\n");
+                setpoint = angles.roll;
                 usart_send_string("Resetting setpoint to: ");
                 ftoa(c_str, setpoint, 2); usart_send_string(c_str); usart_send_string("\r\n");
                 break;
             case 'S':
+                usart_send_string("Setpoint: ");
+                ftoa(c_str, setpoint, 2); usart_send_string(c_str); usart_send_string("\r\n");
                 usart_send_string("Enter the new setpoint, then $: ");
                 setpoint = usart_block_receive_float();
                 usart_send_string("\r\n");
