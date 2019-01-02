@@ -217,6 +217,26 @@ int vain(void) {
 	/* z approaches +pi as y goes from +10 to 0 */
 }
 
+
+int main(void) {
+	init();
+	usart_configure(9600);
+	ppm_configure(1);
+
+	char c_str[32];
+
+	for (;;) {
+			uint16_t last_val = ppm_get_ch(0);
+			ftoa(c_str, (float)last_val, 2); usart_send_string(c_str);
+			usart_send_string(": ");
+			last_val = ppm_get_updates();
+			ftoa(c_str, (float)last_val, 2); usart_send_string(c_str);
+			usart_send_string("\r\n");
+			delay(500);
+	}
+	return 1;
+}
+
 const float MAX_PID_OUTPUT = 4000;
 const float MAX_SPEED = 20000;
 const float MIN_SPEED = 1;
@@ -242,7 +262,7 @@ float get_motor_speed_from_pid(float pid_output, float pid_error, float last_spe
 #define BAUD_RATE 57600
 
 
-int main(void) {
+int blah(void) {
 	euler_t angles;
 	char c_str[32];
 
