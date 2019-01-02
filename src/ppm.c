@@ -26,7 +26,7 @@ void ppm_configure(uint8_t num_channels) {
 	// Initialize timer
 	// TODO: Do we need this
 	TIM_TimeBaseInit(TIM2, &(TIM_TimeBaseInitTypeDef){
-			1000,                  // Prescaler
+			47,                  // Prescaler (want 1us ticks) 48 ticks / us by default (48MHZ sysclk)
 			TIM_CounterMode_Up, // CounterMode
 			// TODO: Revisit
 			60000,              // Period
@@ -40,6 +40,14 @@ void ppm_configure(uint8_t num_channels) {
 			TIM_ICPSC_DIV1,            // Prescaler
 			0                          // Filter
 			});
+	// Using as pwm, ideally I don't need to waste a capture like this.
+	TIM_ICInit(TIM2, &(TIM_ICInitTypeDef){
+			TIM_Channel_2,             // Channel
+			TIM_ICPolarity_Falling,     // Polarity
+			TIM_ICSelection_IndirectTI,  // Selection
+			TIM_ICPSC_DIV1,            // Prescaler
+			0                          // Filter
+			});
   /* Select the TIM2 Input Trigger: TI2FP2 */
   TIM_SelectInputTrigger(TIM2, TIM_TS_TI1FP1);
   /* Select the slave Mode: Reset Mode */
@@ -49,7 +57,7 @@ void ppm_configure(uint8_t num_channels) {
   /* TIM enable counter */
 	TIM_Cmd(TIM2, ENABLE);
 
-	TIM_ITConfig(TIM2, TIM_IT_CC1|TIM_IT_Update, ENABLE);
+	TIM_ITConfig(TIM2, TIM_IT_CC2, ENABLE);
 	// Configure 1st channel's rising edge to start timer
 	// Configure every channel's falling edge to capture
 	// Configure last channel's falling edge to trigger interrupt to override the 
@@ -59,8 +67,8 @@ static uint16_t clock_val = 0;
 static uint16_t num_updates = 0;
 
 void TIM2_IRQHandler(void) {
-	if(TIM_GetITStatus(TIM2, TIM_IT_CC1) != RESET) {
-		clock_val = TIM_GetCapture1(TIM2);
+	if(TIM_GetITStatus(TIM2, TIM_IT_CC2) != RESET) {
+		clock_val = TIM_GetCapture2(TIM2);
 	} else {
 		num_updates ++;
 	}

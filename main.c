@@ -228,9 +228,6 @@ int main(void) {
 	for (;;) {
 			uint16_t last_val = ppm_get_ch(0);
 			ftoa(c_str, (float)last_val, 2); usart_send_string(c_str);
-			usart_send_string(": ");
-			last_val = ppm_get_updates();
-			ftoa(c_str, (float)last_val, 2); usart_send_string(c_str);
 			usart_send_string("\r\n");
 			delay(500);
 	}
