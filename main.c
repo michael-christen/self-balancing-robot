@@ -218,7 +218,7 @@ int vain(void) {
 }
 
 
-int main(void) {
+int ppm_example(void) {
 	init();
 	usart_configure(9600);
 	ppm_configure(1);
@@ -259,12 +259,13 @@ float get_motor_speed_from_pid(float pid_output, float pid_error, float last_spe
 #define BAUD_RATE 57600
 
 
-int blah(void) {
+int main(void) {
 	euler_t angles;
 	char c_str[32];
 
 	init();
 	usart_configure(BAUD_RATE);
+	ppm_configure(1);
 	usart_send_string("Clock Frequency: ");
 	ftoa(c_str, SystemCoreClock, 2); usart_send_string(c_str);
 	usart_send_string("\r\n");
@@ -350,6 +351,7 @@ int blah(void) {
 		profile_toggle();
 		last_loop = tickUs;
 
+		setpoint = ((float)ppm_get_ch(0) - 1500.0) / 200.0 + 3.0;
 		char rx_c = usart_nonblock_receive_char();
 		switch(rx_c) {
 			case 's':
