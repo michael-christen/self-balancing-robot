@@ -4,7 +4,16 @@
 static const MAX_NUM_CHANNELS = 4;
 
 
+/*
+ * Configure PPM receiving for 1 channel.
+ * Use Channel 1 to restart every rising edge
+ * Use Channel 2 to capture the duty cycle, which is what we're looking for.
+ */
 void ppm_configure(uint8_t num_channels) {
+	// TODO: Add support for channels
+	//  - Configure 1st channel's rising edge to start timer
+	//  - Configure every channel's falling edge to capture
+	//  - Configure last channel's falling edge to trigger interrupt to override the
 	RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM2 , ENABLE);
 	RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOA, ENABLE);
 	// Setup GPIO input to map to capture channels
@@ -24,7 +33,6 @@ void ppm_configure(uint8_t num_channels) {
 			ENABLE                     // Command
 			});
 	// Initialize timer
-	// TODO: Do we need this
 	TIM_TimeBaseInit(TIM2, &(TIM_TimeBaseInitTypeDef){
 			47,                  // Prescaler (want 1us ticks) 48 ticks / us by default (48MHZ sysclk)
 			TIM_CounterMode_Up, // CounterMode
@@ -40,7 +48,7 @@ void ppm_configure(uint8_t num_channels) {
 			TIM_ICPSC_DIV1,            // Prescaler
 			0                          // Filter
 			});
-	// Using as pwm, ideally I don't need to waste a capture like this.
+	// TODO: Using as pwm, ideally I don't need to waste a capture like this.
 	TIM_ICInit(TIM2, &(TIM_ICInitTypeDef){
 			TIM_Channel_2,             // Channel
 			TIM_ICPolarity_Falling,     // Polarity
@@ -48,19 +56,16 @@ void ppm_configure(uint8_t num_channels) {
 			TIM_ICPSC_DIV1,            // Prescaler
 			0                          // Filter
 			});
-  /* Select the TIM2 Input Trigger: TI2FP2 */
+  // Select the TIM2 Input Trigger: TI2FP2
   TIM_SelectInputTrigger(TIM2, TIM_TS_TI1FP1);
-  /* Select the slave Mode: Reset Mode */
+  // Select the slave Mode: Reset Mode
   TIM_SelectSlaveMode(TIM2, TIM_SlaveMode_Reset);
   TIM_SelectMasterSlaveMode(TIM2,TIM_MasterSlaveMode_Enable);
 
-  /* TIM enable counter */
+  // TIM enable counter
 	TIM_Cmd(TIM2, ENABLE);
 
 	TIM_ITConfig(TIM2, TIM_IT_CC2, ENABLE);
-	// Configure 1st channel's rising edge to start timer
-	// Configure every channel's falling edge to capture
-	// Configure last channel's falling edge to trigger interrupt to override the 
 }
 
 static uint16_t clock_val = 0;
