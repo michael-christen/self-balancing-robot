@@ -2,6 +2,7 @@
 #include "stm32f0xx_conf.h"
 
 #define MAX_NUM_CHANNELS 4
+#define DEFAULT_VAL 1500
 
 static uint16_t clock_vals[MAX_NUM_CHANNELS] = {0};
 static uint16_t num_updates = 0;
@@ -14,7 +15,7 @@ static uint16_t num_updates = 0;
  */
 void ppm_configure(uint8_t num_channels) {
 	for (int i = 0; i < MAX_NUM_CHANNELS; ++i) {
-		clock_vals[i] = 1500;
+		clock_vals[i] = DEFAULT_VAL;
 	}
 	// TODO: Add support for channels
 	//  - Configure 1st channel's rising edge to start timer
@@ -98,6 +99,9 @@ void TIM3_IRQHandler(void) {
 		clock_vals[0] = TIM_GetCapture2(TIM3);
 		clock_vals[1] = TIM_GetCapture3(TIM3) - clock_vals[0];
 	} else {
+		for (int i = 0; i < MAX_NUM_CHANNELS; ++i) {
+			clock_vals[i] = DEFAULT_VAL;
+		}
 		num_updates ++;
 	}
 	TIM_ClearITPendingBit(TIM3, TIM_IT_CC1|TIM_IT_Update);
