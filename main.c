@@ -193,7 +193,7 @@ float constrf(float value, float smallest, float biggest) {
 }
 
 
-int vain(void) {
+int atan2_example(void) {
 	init();
 	usart_configure(9600);
 
@@ -217,16 +217,22 @@ int vain(void) {
 	/* z approaches +pi as y goes from +10 to 0 */
 }
 
+// #define BAUD_RATE 9600
+#define BAUD_RATE 57600
 
-int ppm_example(void) {
+
+int main(void) {
 	init();
-	usart_configure(9600);
-	ppm_configure(1);
+	usart_configure(BAUD_RATE);
+	ppm_configure(2);
 
 	char c_str[32];
 
 	for (;;) {
 			uint16_t last_val = ppm_get_ch(0);
+			ftoa(c_str, (float)last_val, 2); usart_send_string(c_str);
+			usart_send_string("\t");
+			last_val = ppm_get_ch(1);
 			ftoa(c_str, (float)last_val, 2); usart_send_string(c_str);
 			usart_send_string("\r\n");
 			delay(500);
@@ -255,11 +261,8 @@ float get_motor_speed_from_pid(float pid_output, float pid_error, float last_spe
 	return speed;
 }
 
-// #define BAUD_RATE 9600
-#define BAUD_RATE 57600
 
-
-int main(void) {
+int vain(void) {
 	euler_t angles;
 	char c_str[32];
 
