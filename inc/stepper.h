@@ -18,23 +18,15 @@ extern "C" {
  */
 
 typedef struct stepper_t {
-    uint32_t next_step;
-    uint8_t state;
-    uint32_t step_delay;
-    GPIO_TypeDef *gpio_port;
-    uint32_t step_pin;
+    TIM_TypeDef *timer;
     uint32_t dir_pin;
     uint32_t enable_pin;
 } stepper_t;
 
 stepper_t stepper_init(
-    GPIO_TypeDef *gpio_port,
-    uint32_t step_pin,
+    TIM_TypeDef *timer,
     uint32_t dir_pin,
-    uint32_t enable_pin,
-    uint32_t step_delay,
-    bool forward,
-    uint32_t current_ticks);
+    uint32_t enable_pin);
 
 void stepper_set_dir(stepper_t *stepper, bool forward);
 void stepper_set_speed(stepper_t *stepper, uint16_t frequency);

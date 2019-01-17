@@ -4,14 +4,15 @@
 #include "stm32f0xx.h"
 #include "stm32f0xx_conf.h"
 
+#include "inc/i2c.h"
+#include "inc/imu.h"
+#include "inc/mpu_9250.h"
+#include "inc/ppm.h"
+#include "inc/profile.h"
+#include "inc/quaternion_filters.h"
+#include "inc/std_utils.h"
 #include "inc/stepper.h"
 #include "inc/usart.h"
-#include "inc/i2c.h"
-#include "inc/std_utils.h"
-#include "inc/quaternion_filters.h"
-#include "inc/mpu_9250.h"
-#include "inc/imu.h"
-#include "inc/profile.h"
 
 #define BLINK_DELAY_US (50)
 
@@ -52,7 +53,7 @@ int stepper_example(void) {
 	GPIO_Init(
 			GPIOC,
 			&(GPIO_InitTypeDef){
-			GPIO_Pin_8 | GPIO_Pin_9 | GPIO_Pin_7,
+			GPIO_Pin_9| GPIO_Pin_8 | GPIO_Pin_7 | GPIO_Pin_6,
 			GPIO_Mode_OUT,
 			GPIO_Speed_2MHz,
 			GPIO_OType_PP,
@@ -61,38 +62,43 @@ int stepper_example(void) {
 	bool forward = true;
 	uint32_t last_count = 0;
 	stepper_t stepper0 = stepper_init(
-			GPIOC,
+			TIM1,
+			GPIO_Pin_8,
+			GPIO_Pin_7);
+	stepper_t stepper1 = stepper_init(
+			TIM2,
 			GPIO_Pin_9,
-			GPIO_Pin_9 | GPIO_Pin_8,
-			GPIO_Pin_7,
-			BLINK_DELAY_US,
-			forward,
-			tickUs);
+			GPIO_Pin_6);
 
 	// Timer based configuration
 	RCC_AHBPeriphClockCmd( RCC_AHBPeriph_GPIOA, ENABLE);
 	GPIO_Init(
 			GPIOA,
 			&(GPIO_InitTypeDef){
-			GPIO_Pin_8 | GPIO_Pin_9,
+			GPIO_Pin_8 | GPIO_Pin_0,
 			GPIO_Mode_AF,
 			GPIO_Speed_50MHz,
 			GPIO_OType_PP,
 			GPIO_PuPd_UP
 			});
 	GPIO_PinAFConfig(GPIOA, GPIO_PinSource8, GPIO_AF_2);
-	GPIO_PinAFConfig(GPIOA, GPIO_PinSource9, GPIO_AF_2);
+	GPIO_PinAFConfig(GPIOA, GPIO_PinSource0, GPIO_AF_2);
 	/* TIM1 clock enable */
-	RCC_APB2PeriphClockCmd(RCC_APB2Periph_TIM1 , ENABLE);
+	RCC_APB2PeriphClockCmd(RCC_APB2Periph_TIM1, ENABLE);
+	RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM2, ENABLE);
 
 	uint16_t frequency = 400;  // Hz
 
 	stepper_set_speed(&stepper0, frequency);
+	stepper_set_speed(&stepper1, frequency);
 
 	/* TIM1 counter enable */
-	TIM_Cmd(TIM1, ENABLE);
 	/* TIM1 Main Output Enable */
+	TIM_Cmd(TIM1, ENABLE);
 	TIM_CtrlPWMOutputs(TIM1, ENABLE);
+
+	TIM_Cmd(TIM2, ENABLE);
+	TIM_CtrlPWMOutputs(TIM2, ENABLE);
 	float speed = 0;
 	char c_str[256];
 	for(;;) {
@@ -125,7 +131,9 @@ int stepper_example(void) {
 			last_count += 1;
 			forward = !forward;
 			// stepper_set_dir(&stepper0, forward);
-			stepper_set_speed(&stepper0, speeds[speed_index++]);
+			stepper_set_speed(&stepper0, speeds[speed_index]);
+			stepper_set_speed(&stepper1, speeds[speed_index]);
+			speed_index ++;
 			speed_index %= 11;
 		}
 		__WFI();
@@ -215,13 +223,14 @@ int atan2_example(void) {
 
 	/* z approaches -pi as y goes from -10 to 0 */
 	/* z approaches +pi as y goes from +10 to 0 */
+	return 0;
 }
 
 // #define BAUD_RATE 9600
 #define BAUD_RATE 57600
 
 
-int main(void) {
+int ppm_example(void) {
 	init();
 	usart_configure(BAUD_RATE);
 	ppm_configure(2);
@@ -262,13 +271,13 @@ float get_motor_speed_from_pid(float pid_output, float pid_error, float last_spe
 }
 
 
-int vain(void) {
+int main(void) {
 	euler_t angles;
 	char c_str[32];
 
 	init();
 	usart_configure(BAUD_RATE);
-	ppm_configure(1);
+	ppm_configure(2);
 	usart_send_string("Clock Frequency: ");
 	ftoa(c_str, SystemCoreClock, 2); usart_send_string(c_str);
 	usart_send_string("\r\n");
@@ -288,43 +297,47 @@ int vain(void) {
 	GPIO_Init(
 			GPIOC,
 			&(GPIO_InitTypeDef){
-			GPIO_Pin_8 | GPIO_Pin_9 | GPIO_Pin_7,
+			GPIO_Pin_9 | GPIO_Pin_8 | GPIO_Pin_7 | GPIO_Pin_6,
 			GPIO_Mode_OUT,
 			GPIO_Speed_2MHz,
 			GPIO_OType_PP,
 			GPIO_PuPd_NOPULL
 			});
-	bool forward = true;
 	stepper_t stepper0 = stepper_init(
-			GPIOC,
+			TIM1,
+			GPIO_Pin_8,
+			GPIO_Pin_7);
+	stepper_t stepper1 = stepper_init(
+			TIM2,
 			GPIO_Pin_9,
-			GPIO_Pin_9 | GPIO_Pin_8,
-			GPIO_Pin_7,
-			BLINK_DELAY_US,
-			forward,
-			tickUs);
+			GPIO_Pin_6);
 
 	// Timer based configuration
-	RCC_AHBPeriphClockCmd( RCC_AHBPeriph_GPIOA, ENABLE);
+	RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOA, ENABLE);
+	// TIM1
 	GPIO_Init(
 			GPIOA,
 			&(GPIO_InitTypeDef){
-			GPIO_Pin_8 | GPIO_Pin_9,
+			// TIM1 & TIM2 OC
+			GPIO_Pin_8 | GPIO_Pin_0,
 			GPIO_Mode_AF,
 			GPIO_Speed_50MHz,
 			GPIO_OType_PP,
 			GPIO_PuPd_UP
 			});
 	GPIO_PinAFConfig(GPIOA, GPIO_PinSource8, GPIO_AF_2);
-	GPIO_PinAFConfig(GPIOA, GPIO_PinSource9, GPIO_AF_2);
+	GPIO_PinAFConfig(GPIOA, GPIO_PinSource0, GPIO_AF_2);
 	/* TIM1 clock enable */
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_TIM1 , ENABLE);
-
-
+	RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM2 , ENABLE);
 	/* TIM1 counter enable */
 	TIM_Cmd(TIM1, ENABLE);
 	/* TIM1 Main Output Enable */
 	TIM_CtrlPWMOutputs(TIM1, ENABLE);
+
+	// TIM2
+	TIM_Cmd(TIM2, ENABLE);
+	TIM_CtrlPWMOutputs(TIM2, ENABLE);
 
 	profile_init();
 
@@ -348,6 +361,7 @@ int vain(void) {
 	float setpoint = roll_sum / 200.0;
 	*/
 	float setpoint = 3.0;
+	float rotation = 0.0;
 	float last_speed = 0;
 	bool verbose = false;
 	for (;;) {
@@ -355,6 +369,8 @@ int vain(void) {
 		last_loop = tickUs;
 
 		setpoint = ((float)ppm_get_ch(0) - 1500.0) / 200.0 + 3.0;
+		rotation = ((float)ppm_get_ch(1) - 1500.0) * 5;
+
 		char rx_c = usart_nonblock_receive_char();
 		switch(rx_c) {
 			case 's':
@@ -443,18 +459,8 @@ int vain(void) {
 		integral_error += Ki * pid_error;
 		integral_error = constrf(integral_error, -MAX_PID_OUTPUT, MAX_PID_OUTPUT);
 		float error_derivative = pid_error - last_pid_error;
-
 		pid_output = Kp * pid_error + integral_error + Kd * error_derivative;
-
-		/*
-		// Remove integral_error when crossover
-		if (last_pid_error * pid_error < 0) {
-		integral_error = 0;
-		}
-		*/
-
 		last_pid_error = pid_error;
-
 		if (fabs(pid_error) > MAX_ERROR) {
 			pid_output = 0;
 			integral_error = 0;
@@ -462,8 +468,17 @@ int vain(void) {
 
 		float speed = get_motor_speed_from_pid(pid_output, pid_error, last_speed);
 		last_speed = speed;
-		stepper_set_dir(&stepper0, (speed < 0));
-		stepper_set_speed(&stepper0, (uint16_t) fabs(speed));
+		// TODO: Bounds checking on speed
+		float left_speed = speed - rotation;
+		float right_speed = speed + rotation;
+		if (fabs(pid_error) > MAX_ERROR) {
+			left_speed = 0;
+			right_speed = 0;
+		}
+		stepper_set_dir(&stepper0, (left_speed < 0));
+		stepper_set_speed(&stepper0, (uint16_t) fabs(left_speed));
+		stepper_set_dir(&stepper1, (right_speed < 0));
+		stepper_set_speed(&stepper1, (uint16_t) fabs(right_speed));
 
 		// Every 0.5 second serially print the angles
 		if (tickUs - last_display  > 500000) {
