@@ -277,20 +277,6 @@ int main(void) {
 
 	init();
 	usart_configure(BAUD_RATE);
-	ppm_configure(2);
-	usart_send_string("Clock Frequency: ");
-	ftoa(c_str, SystemCoreClock, 2); usart_send_string(c_str);
-	usart_send_string("\r\n");
-	usart_send_string("Configuring I2C\r\n");
-	i2c_configure();
-	usart_send_string("Initializing IMU\r\n");
-	int imu_init_err = imu_init();
-	if (imu_init_err) {
-		usart_send_string("Failed to initialize IMU: ");
-		my_itoa(c_str, imu_init_err, 5); usart_send_string(c_str);
-		for(;;);
-	}
-	usart_send_string("Starting loop, retrieving Orientations\r\n");
 
 	// Configure direction pin/s and enable pin
 	RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOC, ENABLE);
@@ -339,6 +325,22 @@ int main(void) {
 	TIM_Cmd(TIM2, ENABLE);
 	TIM_CtrlPWMOutputs(TIM2, ENABLE);
 
+
+	ppm_configure(2);
+	usart_send_string("Clock Frequency: ");
+	ftoa(c_str, SystemCoreClock, 2); usart_send_string(c_str);
+	usart_send_string("\r\n");
+	usart_send_string("Configuring I2C\r\n");
+	i2c_configure();
+	usart_send_string("Initializing IMU\r\n");
+	int imu_init_err = imu_init();
+	if (imu_init_err) {
+		usart_send_string("Failed to initialize IMU: ");
+		my_itoa(c_str, imu_init_err, 5); usart_send_string(c_str);
+		for(;;);
+	}
+	usart_send_string("Starting loop, retrieving Orientations\r\n");
+
 	profile_init();
 
 	uint32_t last_display = tickUs;
@@ -370,6 +372,9 @@ int main(void) {
 
 		setpoint = ((float)ppm_get_ch(0) - 1500.0) / 200.0 + 3.0;
 		rotation = ((float)ppm_get_ch(1) - 1500.0) * 5;
+		if (fabs(rotation) > MAX_SPEED) {
+			rotation = 0;
+		}
 
 		char rx_c = usart_nonblock_receive_char();
 		switch(rx_c) {
