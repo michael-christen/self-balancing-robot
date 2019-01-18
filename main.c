@@ -1,3 +1,13 @@
+/*
+ *
+ * Checklist of things to try:
+ * - nonlinear stepper motor
+ * - auto-correcting setpoint
+ * - set MIN_ERROR > 0
+ * - braking function
+ * - window for turn to constant speed
+ * - use controller to slowly move setpoint back and forwards
+ */
 #include <stdio.h>
 #include <stdint.h>
 
@@ -18,6 +28,9 @@
 
 #define RAD_TO_DEG ( 180.0f / M_PI )
 #define DEG_TO_RAD ( M_PI / 180.0f )
+
+// #define BAUD_RATE 9600
+#define BAUD_RATE 57600
 
 volatile uint32_t tickUs = 0;
 
@@ -46,7 +59,8 @@ int usart_example(void) {
 
 int stepper_example(void) {
 	init();
-	usart_configure(9600);
+	ppm_configure(2);
+	usart_configure(BAUD_RATE);
 	usart_send_string("Enter a speed value, then hit enter:\r\n");
 	// Configure direction pin/s & enable pin
 	RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOC, ENABLE);
@@ -102,14 +116,17 @@ int stepper_example(void) {
 	float speed = 0;
 	char c_str[256];
 	for(;;) {
-		speed = usart_block_receive_float();
-		usart_send_string("\r\nSetting speed to: ");
+		// speed = usart_block_receive_float();
+		speed = (((float)ppm_get_ch(0)) - 1500.0) * 50.0;
+		// usart_send_string("\r\nSetting speed to: ");
 		ftoa(c_str, speed, 0); usart_send_string(c_str);
 		usart_send_string("\r\n");
 		uint16_t motor_speed = (uint16_t) fabs(speed);
 		bool dir = speed < 0;
 		stepper_set_dir(&stepper0, dir);
 		stepper_set_speed(&stepper0, motor_speed);
+		stepper_set_dir(&stepper1, dir);
+		stepper_set_speed(&stepper1, motor_speed);
 	}
 
 	uint16_t speeds[] = {
@@ -226,9 +243,6 @@ int atan2_example(void) {
 	return 0;
 }
 
-// #define BAUD_RATE 9600
-#define BAUD_RATE 57600
-
 
 int ppm_example(void) {
 	init();
@@ -251,24 +265,10 @@ int ppm_example(void) {
 
 const float MAX_PID_OUTPUT = 4000;
 const float MAX_SPEED = 20000;
-const float MIN_SPEED = 1;
+const float MIN_SPEED = 1000;
 const float MAX_ERROR = 30.0;
 float MIN_ERROR = 0.0;
 // const float MAX_SPEED_DIFF = 200;
-
-float get_motor_speed_from_pid(float pid_output, float pid_error, float last_speed) {
-	float speed = (constrf(pid_output, -MAX_PID_OUTPUT, MAX_PID_OUTPUT) *
-			(MAX_SPEED / MAX_PID_OUTPUT));
-	// float diff = constrf(speed - last_speed, -MAX_SPEED_DIFF, MAX_SPEED_DIFF);
-	// speed = last_speed + diff;
-	if (fabs(pid_error) < MIN_ERROR) {
-		return 0;
-	}
-	if (fabs(speed) < MIN_SPEED) {
-		return 0;
-	}
-	return speed;
-}
 
 
 int main(void) {
@@ -364,13 +364,14 @@ int main(void) {
 	*/
 	float setpoint = 3.0;
 	float rotation = 0.0;
-	float last_speed = 0;
 	bool verbose = false;
 	for (;;) {
 		profile_toggle();
 		last_loop = tickUs;
 
+		// Have a deadband
 		setpoint = ((float)ppm_get_ch(0) - 1500.0) / 200.0 + 3.0;
+		// TOOO: only increase rotation by a small amount
 		rotation = ((float)ppm_get_ch(1) - 1500.0) * 5;
 		if (fabs(rotation) > MAX_SPEED) {
 			rotation = 0;
@@ -459,27 +460,50 @@ int main(void) {
 		imu_update_quaternion();
 		imu_get_euler_orientation(&angles);
 
-		// TODO: Proper PID
+		// self_balance_pid_setpoint
 		float pid_error = angles.roll - setpoint;
+		// Braking function
+		// TODO: Check scale on that
+		/*
+		if(pid_output > 10 || pid_output < -10) {
+			pid_error += pid_output * 0.015;
+		}
+		*/
 		integral_error += Ki * pid_error;
 		integral_error = constrf(integral_error, -MAX_PID_OUTPUT, MAX_PID_OUTPUT);
 		float error_derivative = pid_error - last_pid_error;
 		pid_output = Kp * pid_error + integral_error + Kd * error_derivative;
+		pid_output = constrf(pid_output, -MAX_PID_OUTPUT, MAX_PID_OUTPUT);
 		last_pid_error = pid_error;
 		if (fabs(pid_error) > MAX_ERROR) {
 			pid_output = 0;
 			integral_error = 0;
 		}
+		// Deadband: stop motors w/in range
+		if (fabs(pid_output) < MIN_ERROR) {
+			pid_output = 0;
+		}
 
-		float speed = get_motor_speed_from_pid(pid_output, pid_error, last_speed);
-		last_speed = speed;
+		float speed = pid_output * (MAX_SPEED / MAX_PID_OUTPUT);
+		if (fabs(speed) < MIN_SPEED) {
+			speed = 0;
+		}
+
 		// TODO: Bounds checking on speed
 		float left_speed = speed - rotation;
 		float right_speed = speed + rotation;
+		if (fabs(left_speed) < MIN_SPEED) {
+			left_speed = 0;
+		}
+		if (fabs(right_speed) < MIN_SPEED) {
+			right_speed = 0;
+		}
 		if (fabs(pid_error) > MAX_ERROR) {
 			left_speed = 0;
 			right_speed = 0;
 		}
+		// Nonlinear setting
+		// if(pid_output_right > 0)pid_output_right = 405 - (1/(pid_output_right + 9)) * 5500;
 		stepper_set_dir(&stepper0, (left_speed < 0));
 		stepper_set_speed(&stepper0, (uint16_t) fabs(left_speed));
 		stepper_set_dir(&stepper1, (right_speed < 0));
